@@ -89,12 +89,61 @@ def ask_and_get_answer(vectorstore, q, k=3):
     answer = chain.invoke(q)
     return answer
 
+def summarizing(docs):
+
+    from langchain import PromptTemplate
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain.chains.summarize import load_summarize_chain
+
+    max_prompt="Write a short and concise summary of the following " \
+    "Text: {text}" \
+    "consise summary: "
+
+    combine_prompt="Write a concise summary of the following text that covers the key points. " \
+    "Add a title to the summary" \
+    "Start your summary with an `Introduction Paragraph` that gives an overview of" \
+    "the topic followed by `BULLET POINTS` if possible and the summary with " \
+    "CONCLUSION PHRASE:" \
+    "Text: {text}" 
+
+    combine_prompt_template = PromptTemplate(
+        template=combine_prompt, input_variables=['text']
+    )   
+
+    max_prompt_template = PromptTemplate(
+        input_variables=["text"],
+        template=max_prompt
+    )
+
+
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=1)
+
+    chain = load_summarize_chain(
+        llm,
+        chain_type="map_reduce",
+        map_prompt=max_prompt_template,
+        combine_prompt=combine_prompt_template,
+        verbose=False
+    )
+
+    output = chain.invoke(docs)
+
+    return output['output_text']
+
 def ask_with_memory(vector_store, question, k=3, chat_history=[]):
     from langchain.chains import ConversationalRetrievalChain
     from langchain_google_genai import ChatGoogleGenerativeAI
-
+    
     llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash' , temperature=1)
+
+    if "summarize" in question.lower():
+        retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': 10})
+        docs = retriever.invoke("summarize all content")
+        answer = summarizing(docs)
+        return answer
+    
     retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': k})
+
 
     crc = ConversationalRetrievalChain.from_llm(llm, retriever)
     result = crc({'question': question, 'chat_history': chat_history})
@@ -212,7 +261,10 @@ def main():
             # st.write(f"k: {k}  higher the k the more number of tokens it will generate")
             
             answer, chat_history = ask_with_memory(vector_store, q, k, chat_history)
-            st.text_area(f'LLM answer:', value=answer["answer"])
+            if "summarize" in q.lower():
+                st.text_area(f'LLM answer:', value=answer)
+            else:
+                st.text_area(f'LLM answer:', value=answer["answer"])
 
             st.divider()
             if "history" not in st.session_state :
