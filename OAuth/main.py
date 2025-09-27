@@ -1,160 +1,188 @@
+''' 
+let's learn how can we implement the OAuth2 password with (hashing) and tokens with bearer. 
+
+# First let's learn what is JWT tokens. aka Json Web Tokens are tokens are the tokens where 
+json object are converted into long string and it is not encrypted so if we want to access it 
+content then we can access it. 
+
+To convert content into the `JWT` we need to install first, 
+
+$ pip install pyjwt 
+
+# Hashing - means converting input with specified length character(password) into the context 
+into the specified bytes. When you pass the same password and hash function will convert
+it into the same glibberish but glibberish cannot convert to the input 
+
+how this protect us ? if we loose our database to any of the hacker then they will see hashed 
+passwords which will be much secured than simple text password 
+
+Passlib - Passlib is an library in the python, where we can hash password with this library 
+and it supports many hashing algorithm, the recommended algorithm is Bcrypt
+
+$ pip install "passlib[bcrypt]"
+
+##### Now, lets hash the password
+- first create an utility function which will hash the password comming from the user 
+- and another utility to match and check the stored hash and comming hash are same 
+- and another utility function to authenticate and return 
+
+'''
+
+'''
+First import jwt and create a random secret key that will be used to sign the JWT tokens. 
+we can simply create by 
+this command 
+
+$ openssl rand -hex 32
+
+and copy the output to the variable SECRET_KEY
+
+create a variable ALGORTIHM with the algorithm used to sign the JWT token and set it HS256 is and hashing algorithm
+'''
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from fastapi import Depends, FastAPI
-from fastapi.security import OAuth2PasswordBearer
 
-app = FastAPI()
+import jwt
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jwt.exceptions import InvalidTokenError
+from passlib.context import CryptContext
+from pydantic import BaseModel
 
-# @app.get("/")
-# async def root():
-#     return {"message": "Hello World"}
+# to get a string like this run:
+# openssl rand -hex 32
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-"""  
-# what is OpenAPI for 
-OpenAPI is just like a blueprint or map of API. 
-which describes the what API can do (simply absract them)
-Example: if your API has /items/ that returns a list of items 
-then it writes down in (JSON) format. 
 
-#What is OpenAPI + JSON Schema
-OpenAPI is about the API structure (endpoints, methods, responses)
-while in inside it uses JSON schema to describe the shape of the data. 
-
-Here's how you can check OpenAPI:
-http://127.0.0.1:8000/openapi.json
-
-you'll see the raw json blueprint of API. but, It looks scary.
-{
-    "openapi":"3.1.0",
-    "info":{"title":"FastAPI","version":"0.1.0"},
-    "paths":{"/":
-        {"get":
-            {"summary":"Root","operationId":"root__get","responses":
-                {"200":
-                    {"description":"Successful Response","content":
-                        {"application/json":{"schema":{}}
-                    }
-                }
-            }
-        }
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "disabled": False,
     }
 }
 
-"""
 
-""" 
-# The simplest FastAPI call 
- @app.get("/") tells FastAPI that the function right below is in charge of requests
- the path / & using a get operation. 
- you can also use other operation like 
-
- @app.post() to create data
- @app.put() to update data
- @app.delete() to delete data
-
-"""
-
-"""
-every one is using async right do you know what is it ? 
-Async means asynchronous which is you can run other program while your request waiting. 
-
-when your API does something slow like (waiting for a database, calling another api)
-normally, Python would just sit and wait. 
-
-when using async, FastAPI can do other work not just block the server and handle other requests in the mean time. 
-"""
-
-"""
-In async function
-you can return a dict, list, singular values as str, int etc. 
-"""
-
-'''
-If you want a specific parameter with free from error prone
-then you can use path parameter to predefined value. you can use a standard python Enum 
-'''
-
-# from enum import Enum
-
-# class ModelName(str, Enum):
-#     alexnet = "alexnet"
-#     resnet = "resnet"
-#     lenet = "lenet"
-
-# @app.get("/models/{model_name}")
-# async def get_model(model_name: ModelName):
-#     if model_name is ModelName.alexnet:
-#         return {"model_name": model_name, "message": "Deep Learning model"}
-    
-#     if model_name.value == "lenet":
-#         return {"model_name": model_name, "message": "LeCNN all the images"}
-
-#     return {"model_name": model_name, "message": "Have some residuals"}
-
-fake_items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
-
-''' 
-When you don't implement the function parameter that are not of the path
-parameters, then they are automatically intrepreted as 'query' parameter 
-
-If you need any help then go to documentation https://fastapi.tiangolo.com/tutorial/query-params/
-We can add the default parameter in the query parameter. 
-'''
-# @app.get("/items/")
-# async def read_item(skip: int = 0, limit: int = 10):
-#     return fake_items_db[skip : skip + limit]
-
-'''
-There are other ways also to set optional parameter, for example: giving default value as None
-even if you don't fill the optional parameter the value set is None, so it will not give any type of error.
-'''
-# @app.get("/items/{item_id}")
-# async def read_item(item_id: str, q: str | None = None):
-#     if q:
-#         return {"item_id": item_id, "q": q}
-#     return {"item_id": item_id}
-
-''' 
-you can also declare the bool types, and they will be converted.
-# Go to Query Parameter Type Conversion 
-'''
-# @app.get("/items/{item_id}")
-# async def read_user_item(item_id: str, needy: str):
-#     item = {"item_id": item_id, "needy": needy}
-#     return item
-
-from fastapi import FastAPI, Query
-from typing import Annotated
-from pydantic import BaseModel
-import random
-from pydantic import AfterValidator
-
-data = {
-    "isbn-9781529046137": "The Hitchhiker's Guide to the Galaxy",
-    "imdb-tt0371724": "The Hitchhiker's Guide to the Galaxy",
-    "isbn-9781439512982": "Isaac Asimov: The Complete Stories, Vol. 2",
-}
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 
-def check_valid_id(id: str):
-    if not id.startswith(("isbn-", "imdb-")):
-        raise ValueError('Invalid ID format, it must start with "isbn-" or "imdb-"')
-    return id
+class TokenData(BaseModel):
+    username: str | None = None
 
 
-@app.get("/items/")
-async def read_items(
-    id: Annotated[str | None, AfterValidator(check_valid_id)] = None,
-):
-    if id:
-        item = data.get(id)
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+
+class UserInDB(User):
+    hashed_password: str
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+app = FastAPI()
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
+
+
+def authenticate_user(fake_db, username: str, password: str):
+    user = get_user(fake_db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        id, item = random.choice(list(data.items()))
-    return {"id": id, "name": item}
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# @app.get("/items/")
-# async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
-#     return {"token": token}
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except InvalidTokenError:
+        raise credentials_exception
+    user = get_user(fake_users_db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+async def get_current_active_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
+@app.post("/token")
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> Token:
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@app.get("/users/me/", response_model=User)
+async def read_users_me(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    return current_user
+
+
+@app.get("/users/me/items/")
+async def read_own_items(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    return [{"item_id": "Foo", "owner": current_user.username}]
