@@ -30,7 +30,7 @@ def on_startup():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-secret_key = "b84805d2ac3814b0a375bedf53df3531d3437176f858a4fd770aa1d327ea2b2a"
+# secret_key = "b84805d2ac3814b0a375bedf53df3531d3437176f858a4fd770aa1d327ea2b2a"
 ALGO = "HS256"
 ACCESS_TOKEN_EXPIRE = 30
 
