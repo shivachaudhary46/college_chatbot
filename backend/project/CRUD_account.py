@@ -1,9 +1,19 @@
 from .database import SessionDep, create_all_db_tables
-from .models import User
+from .models import User, Token, Info
 from sqlmodel import select
+from datetime import timedelta
 
 from typing import Annotated
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+
+from .FuncNeedForLogin import authenticate_user, create_access_token, get_current_user
+from dotenv import load_dotenv
+import os 
+
+load_dotenv()
+
+ACCESS_TOKEN_EXPIRE = int(os.getenv("ACCESS_TOKEN_EXPIRE"))
 
 app = FastAPI() 
 
@@ -15,12 +25,14 @@ def on_startup():
 create an account 
 '''
 @app.post("/create_an_account/")
-def create_an_account(user: User, session: SessionDep) -> User:
-    user.set_password(user.hashed_password)
+def create_an_account(info: Info, session: SessionDep):
+    info.set_password(info.hashed_password)
+    user = User(**info.model_dump())
     session.add(user)
     session.commit()
-    session.refresh(user)
-    return user
+
+    info.hashed_password = ""
+    return info
 
 '''
 read all account
@@ -64,7 +76,29 @@ def delete_one_account(username: str, session: SessionDep):
     session.commit()
     return {"ok": True}
 
+'''
+Login with token
+'''
+@app.post("/token")
+async def login_an_account(data: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep) -> Token:
+    user = authenticate_user(data.username, data.password, session)
+    if not user: 
+        raise HTTPException(status_code=400, detail="invalid Username or password")
+    
+    access_time = timedelta(minutes=ACCESS_TOKEN_EXPIRE)
+    token = create_access_token(
+        data = {"sub": user.username}, expire_time = access_time
+    )
 
+    if token is None :
+        raise HTTPException(status_code=400, detail="invalid username or password")
 
+    return Token(access_token=token, token_type="bearer")
 
+'''
+show current user
+'''
+@app.get("/token")
+async def get_current_username(current_user: Annotated[User, Depends(get_current_user)]):
+    return {"user": current_user.username}
 

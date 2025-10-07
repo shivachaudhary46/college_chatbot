@@ -1,12 +1,12 @@
 from typing import Annotated
+from pydantic import BaseModel
 from fastapi import Depends, FastAPI, HTTPException, status 
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 import jwt 
 from pwdlib import PasswordHash
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
-
-from pydantic import BaseModel
 
 from sqlmodel import SQLModel, Field, Session, create_engine
 
