@@ -49,46 +49,42 @@ https://docs.crawl4ai.com/core/quickstart/
 
 import asyncio
 from crawl4ai import AsyncWebCrawler
-from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
+from crawl4ai import BrowserConfig, CrawlerRunConfig 
+from crawl4ai import DefaultMarkdownGenerator, PruningContentFilter
+
+config = CrawlerRunConfig(
+    markdown_generator = DefaultMarkdownGenerator(
+        content_filter=PruningContentFilter(threshold=0.6),
+        options={"ignore_links": True}  
+    )
+)
 
 async def main():
-    browser_config = BrowserConfig(verbose=True)
-    run_config = CrawlerRunConfig(
-        # Content filtering
-        word_count_threshold=10,
-        excluded_tags=['form', 'header'],
-        exclude_external_links=True,
+    browser_config = BrowserConfig()
 
-        # Content processing
-        process_iframes=True,
-        remove_overlay_elements=True,
-
-        # Cache control
-        cache_mode=CacheMode.ENABLED  # Use cache if available
-    )
-
-    async with AsyncWebCrawler(browser_configconfig=browser_config) as crawler:
+    async with AsyncWebCrawler(config=browser_config) as crawler:
         result = await crawler.arun(
-            url="https://example.com",
-            run_config=run_config
+            url="https://github.com",
+            run_config=config
         )
 
-        if result.success:
-            # Print clean content
-            print("Content:", result.markdown[:500])  # First 500 chars
+        # print(result.html)
+        # print(result.cleaned_html)  # cleaned HTML 
+        # print(result.markdown.raw_markdown) # raw markdown from cleaned HTML 
+        # print(result.markdown.fit_markdown) # most relevant content in markdown
 
-            # Process images
-            for image in result.media["images"]:
-                print(f"Found image: {image['src']}")
+        print(result.success)
+        print(result.status_code)
 
-            # Process links
-            for link in result.links["internal"]:
-                print(f"Internal link: {link['href']}")
+        if not result.success:
+            print(f"crawl failed: {result.error_message}")
+            print(f"status code: {result.status_code}")
 
-        else:
-            print(f"Crawl failed: {result.error_message}")
+        # print()
+        # print(result.media)
+        # print(result.links)
 
+        
 if __name__ == "__main__":
     asyncio.run(main())
-
-
+ 

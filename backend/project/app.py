@@ -25,3 +25,6 @@ async def crawl_links(urls, query):
     ]
     results = await asyncio.gather(*tasks)
     return results
+
+final_results = crawl_links(urls, input_text)
+print(final_results)
