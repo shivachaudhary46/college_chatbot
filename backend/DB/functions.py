@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 from database import engine
 from models import User, Attendance, Fees, Marks
 
-
+# ========= function to add user to database ==========
 def add_user(username: str, full_name: str, email: str, batch: str | None = None, program: str | None = None):
     with Session(engine) as session:
         user = User(
