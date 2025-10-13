@@ -1,36 +1,158 @@
-from typing import Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+
+user_data = [
+        {
+            "full_name": "Akrisha Khanal",
+            "username": "akrisha",
+            "email": "akrisha@mbmc.edu.np",
+        },
+        {
+            "full_name": "Jenisha Adhikari",
+            "username": "jenisha",
+            "email": "jenisha@mbmc.edu.np",
+        },
+        {
+            "full_name": "Grishma Bhatt",
+            "username": "grishma",
+            "email": "grishma@mbmc.edu.np",
+        },
+        {
+            "full_name": "Chandan Sharma Thakur",
+            "username": "chandan",
+            "email": "chandan@mbmc.edu.np",
+        },
+        {
+            "full_name": "Shiva Chaudhary",
+            "username": "shiva",
+            "email": "shiva@college.com",
+        },
+        {
+            "full_name": "Umanga Ghimire",
+            "username": "umanga",
+            "email": "umanga@college.com",
+        },
+    ]
+
+attendance_data = [
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 27, 
+            "attendee_status": "satisfied"
+        },
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 21, 
+            "attendee_status": "not regular"
+        },
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 25, 
+            "attendee_status": "regular"
+        },
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 12, 
+            "attendee_status": "not regular"
+        },
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 27, 
+            "attendee_status": "satisfied"
+        },
+        {
+            "month": "Ashoj",
+            "semester": "4th",
+            "total": 25, 
+            "attendee_status": "regular"
+        },
+    ]
+
+fees_data = [
+        {
+            "semester": "4th",
+            "total_paid": 5000,
+            "last_payment_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "total_paid": 84000,
+            "last_payment_date": datetime(2025, 3, 8)
+        },
+        {
+            "semester": "4th",
+            "total_paid": 50000,
+            "last_payment_date": datetime(2025, 1, 3)
+        },
+        {
+            "semester": "4th",
+            "total_paid": 84000,
+            "last_payment_date": datetime(2025, 5, 23)
+        },
+        {
+            "semester": "4th",
+            "total_paid": 25000,
+            "last_payment_date": datetime(2025, 3, 20)
+        },
+        {
+            "semester": "4th",
+            "total_paid": 84000,
+            "last_payment_date": datetime(2025, 6, 10)
+        },
+    ]
+
+marks_data = [
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 55,
+            "grade": "A",
+            "exam_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 35,
+            "grade": "B",
+            "exam_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 23,
+            "grade": "C",
+            "exam_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 12,
+            "grade": "E",
+            "exam_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 58,
+            "grade": "A",
+            "exam_date": datetime(2025, 12, 9)
+        },
+        {
+            "semester": "4th",
+            "subject": "AI",
+            "total_marks": 45,
+            "grade": "B",
+            "exam_date": datetime(2025, 12, 9)
+        },
+  
+    ]
 
 
-class Notice(SQLModel, table=True):
-    """
-    Notice and Announcement model for Tribhuvan University
-    Stores all official notices and announcements from the college
-    """
-    id: Optional[int] = Field(default=None, primary_key=True)
-    title: str = Field(index=True)
-    description: str
-    notice_type: str  # e.g., "Exam", "Academic", "Event", "Holiday", "General"
-    category: str  # e.g., "CSIT", "BBS", "BA", "All"
-    batch: str
-    semester: str
-
-    # Dates
-    issued_date: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Status
-    is_active: bool = Field(default=True)
-    is_urgent: bool = Field(default=True)
-    
-    # Additional info
-    issued_by: str = Field(default="MBMC Admin")
-    attachments_url: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-SAMPLE_DATA = [
+notice_data = [
     {
         "title": "Mid-Term Exam of BScCSIT 4th Semester (2080 Batch)",
         "description": "Mid-term examination for Bachelor of Science in Computer Science and Information Technology, 4th semester students of 2080 batch will be held as per the scheduled date.",

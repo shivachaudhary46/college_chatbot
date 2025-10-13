@@ -1,9 +1,9 @@
 # ==================== import module =======================
 from database import create_all_db_tables, SessionDep, engine
-from necessities import insert_attendance_data
+from utilities import insert_data
 
 # ==================== MODEL DEFINITION ====================
-from models import Attendance
+from models import User
 
 
 # ==================== MAIN EXECUTION ====================
@@ -12,8 +12,8 @@ if __name__ == "__main__":
     print("Creating database tables...")
     create_all_db_tables()
     
-    # Insert attendance data
-    print("Inserting attendance data...")
-    insert_attendance_data()
+    # Insert data
+    print("Inserting data...")
+    insert_data()
     
     print("✅ Database setup complete!")
