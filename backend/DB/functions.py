@@ -1,6 +1,10 @@
+# =========================================================
+# =========================================================
+# ============= Database ==================================
 from sqlmodel import Session, select
 from database import engine
 from models import User, Attendance, Fees, Marks
+from datetime import datetime
 
 # ========= function to add user to database ==========
 def add_user(username: str, full_name: str, email: str, batch: str | None = None, program: str | None = None):
@@ -17,6 +21,7 @@ def add_user(username: str, full_name: str, email: str, batch: str | None = None
         session.refresh(user)
         return user
     
+# ========= function to add attendance to database =======
 def add_attendance(user_id: int, month: str, semester: str, total: int, status: str):
     with Session(engine) as session:
         attendee = Attendance(
@@ -31,7 +36,8 @@ def add_attendance(user_id: int, month: str, semester: str, total: int, status: 
         session.commit()
         session.refresh(attendee)
         return attendee
-    
+
+# ========= function to add fees to database =======
 def add_fees(user_id: int, semester: int, total_paid: int, last_payment_date: datetime):
     with Session(engine) as session: 
         fee = Fees(
@@ -45,6 +51,7 @@ def add_fees(user_id: int, semester: int, total_paid: int, last_payment_date: da
         session.refresh(fee)
         return fee
     
+# ========= function to add marks to database =======
 def add_marks(user_id: int, semester: str, subject: str, total_marks: int, grade: str, exam_date: datetime):
     with Session(engine) as session: 
         subject_mark = Marks(
@@ -61,6 +68,7 @@ def add_marks(user_id: int, semester: str, subject: str, total_marks: int, grade
         session.refresh(subject_mark)
         return subject_mark
     
+# ====== To check the all data is added ? =======
 def get_user_with_all_data(user_id: int):
     """Get user with all related data"""
     with Session(engine) as session:
@@ -75,3 +83,4 @@ def get_user_with_all_data(user_id: int):
             print(f"Marks Records: {user.marks_records}")
             return user
         return None
+    
