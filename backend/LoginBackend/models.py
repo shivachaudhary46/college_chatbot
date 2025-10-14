@@ -23,7 +23,6 @@ class User(SQLModel, table=True):
     email: str 
     hashed_password: str 
     disabled: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
     
 # ================ User Info =======================
 class Info(SQLModel):

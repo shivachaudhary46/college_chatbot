@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from .FuncNeedForLogin import authenticate_user, create_access_token, get_current_user
+from .utilities import authenticate_user, create_access_token, get_current_user
 from dotenv import load_dotenv
 import os 
 
