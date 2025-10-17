@@ -6,8 +6,8 @@ This is the production level backend
 
 # ============== Login backend imports =============
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Annotated, Optional
-from pydantic import BaseModel
+from typing import Annotated, Optional, List
+from pydantic import EmailStr, BaseModel
 
 from pwdlib import PasswordHash
 
@@ -21,14 +21,27 @@ class User(SQLModel, table=True):
     username: str | None = Field(index=True, unique=True)
     full_name: str 
     email: str 
+
+    batch: str
+    program: str 
+
     hashed_password: str 
     disabled: bool = Field(default=False)
+    created_at: datetime = Field(default=datetime.now())
+
+    attendance_records: List["Attendance"] = Relationship(back_populates="user")
+    fees_records: List["Fees"] = Relationship(back_populates="user")
+    marks_records: List["Marks"] = Relationship(back_populates="user")
     
 # ================ User Info =======================
 class Info(SQLModel):
     username: str | None = Field(index=True, unique=True)
+
     full_name: str 
     email: str 
+    batch: str
+    program: str 
+
     hashed_password: str 
     disabled: bool = Field(default=False)
 
@@ -36,7 +49,7 @@ class Info(SQLModel):
         self.hashed_password = hasher.hash(plain_password)
 
     def verify_password(self, plain_password: str, hashed_password: str):
-        return hasher.verify(plain_password, hashed_password)
+        return hasher.verify(plain_password, hashed_password) 
 
 # ======= JWT token info ================== 
 class Token(BaseModel):
@@ -70,3 +83,109 @@ def authenticate_user(db, username: str, password: str):
     if not verify_password(password, user.hashed_password):
         return False
     return user
+
+# ============= Attendance Information Table =============
+class Attendance(SQLModel, table=True):
+    """
+    Attendance model for 2080 Batch Ashoj Month CSIT 4th semester
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, foreign_key="user.id")
+
+    month: str = Field(default="Ashoj")
+    semester: str = Field(default="4th")
+    
+    total: int
+    attendee_status: str
+    created_at: datetime = Field(default=datetime.now())
+
+    # add relationship 
+    user: Optional[User] = Relationship(back_populates="attendance_records")
+
+# # ============== Fee Payment table ====================
+class Fees(SQLModel, table=True):
+    """
+    Fee Payment tracking model for 2080 Batch CSIT students
+    Maps username to semester-wise fee payment records
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, foreign_key="user.id")
+    
+    # 8 semesters fee payment
+    semester: int = Field(default=0)
+    
+    # Financial summary
+    total_paid: int = Field(default=0)
+    amount_due: int = Field(default=0)
+    payment_status: str = Field(default="Pending")
+    created_at: datetime = Field(default=datetime.now())
+    
+    # Metadata
+    last_payment_date: datetime = Field(default=None)
+    
+    user: Optional[User] = Relationship(back_populates="fees_records")
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.amount_due = 84000 - self.total_paid
+
+        if self.amount_due == 0:
+            self.payment_status = "Paid"
+        else:
+            self.payment_status = "Pending"
+
+# # =================== Results table =================
+class Marks(SQLModel, table=True):
+    """
+    Student Marks model for 4th Semester CSIT 2080 Batch
+    Tracks theory, practical, and total marks for 5 subjects
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, foreign_key="user.id")
+    semester: str = Field(default="4th")
+
+    # details 
+    subject: str
+    
+    # Summary
+    total_marks: int = Field(default=0)
+    grade: Optional[str] = None
+    status: str = Field(default="Pass")
+    exam_date: datetime
+
+    user: Optional[User] = Relationship(back_populates="marks_records")
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+        if self.total_marks >= 24:
+            self.status = "Pass"
+        else:
+            self.status = "Fail"
+
+# ======== Pydantic models for API ========
+class UserCreate(BaseModel):
+    # schema for creating a user
+    username: str
+    full_name: str
+    email: str
+    batch: str
+    program: str
+    password: str
+
+class UserResponse(BaseModel):
+    # schema for user response with relationships
+    id: int
+    username: str
+    full_name: str
+    email: str
+    batch: str
+    program: str
+    created_at: datetime
+
+    created_at: datetime
+    attendance_records: List["Attendance"] = []
+    fees_records: List["Fees"] = []
+    marks_records: List["Marks"] = []
+
+class User

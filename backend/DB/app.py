@@ -1,17 +1,19 @@
 # ======================================
 # ======== important module ============
-from database import SessionDep, create_all_db_tables
-from models import User, Token, Info
 from sqlmodel import select
 from datetime import timedelta
 
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
+from models import User, Token, Info
 
-from utilities import authenticate_user, create_access_token, get_current_user
 from dotenv import load_dotenv
 import os 
+
+
+from database import SessionDep, create_all_db_tables
+from login import authenticate_user, create_access_token, get_current_user
 
 load_dotenv()
 

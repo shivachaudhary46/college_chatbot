@@ -1,9 +1,12 @@
-# ==================== import module =======================
-from database import create_all_db_tables, SessionDep, engine
-from utilities import insert_data
+from typing import TYPE_CHECKING
 
-# ==================== MODEL DEFINITION ====================
-from models import User
+if TYPE_CHECKING:
+    # ==================== import module =======================
+    from database import create_all_db_tables, SessionDep, engine
+    from utilities import insert_data
+
+    # ==================== MODEL DEFINITION ====================
+    from models import User
 
 
 # ==================== MAIN EXECUTION ====================

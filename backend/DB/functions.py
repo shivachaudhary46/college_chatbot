@@ -2,9 +2,12 @@
 # =========================================================
 # ============= Database ==================================
 from sqlmodel import Session, select
-from database import engine
-from models import User, Attendance, Fees, Marks
+from typing import TYPE_CHECKING
 from datetime import datetime
+
+
+from models import User, Attendance, Fees, Marks
+from database import engine
 
 # ========= function to add user to database ==========
 def add_user(username: str, full_name: str, email: str, batch: str | None = None, program: str | None = None):
