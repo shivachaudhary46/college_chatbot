@@ -181,11 +181,48 @@ class UserResponse(BaseModel):
     email: str
     batch: str
     program: str
-    created_at: datetime
 
     created_at: datetime
     attendance_records: List["Attendance"] = []
     fees_records: List["Fees"] = []
     marks_records: List["Marks"] = []
 
-class User
+class UserWithAllData(BaseModel):
+    """Complete user data with all relationships"""
+    user: UserResponse
+    attendance: List["Attendance"]
+    fees: List["Fees"]
+    marks: List["Marks"]
+
+from sqlmodel import select 
+from database import SessionDep
+
+def get_user_by_username(session: SessionDep, username: str) -> Optional[UserResponse]:
+    statement = select(UserResponse).where(UserResponse.username == username)
+    return session.exec(statement).first()
+
+def get_all_users_with_data (session: SessionDep, skip: int = 0, limit: int = 100) -> List[dict]:
+    statement = select(User).offset(skip).limit(limit)
+    users = session.exec(statement).all() 
+
+    result = [
+        {
+            "user": user, 
+            "attendance": user.attendance_records,
+            "fees": user.fees_records,
+            "marks": user.marks_records
+        }
+        for user in users
+    ]
+
+def get_user_attendance(session: SessionDep, user_id: int) -> List[Attendance]:
+    statement = select(Attendance).where(Attendance.user_id == user_id)
+    return statement.exec(statement).all() 
+
+def get_user_fees(session: SessionDep, user_id: int) -> List[Fees]:
+    statement = select(Fees).where(Fees.user_id == user_id)
+    return session.exec(statement).all()
+
+def get_user_marks(session: SessionDep, user_id: int) -> List[Marks]:
+    statement = select(Marks).where(Marks.user_id == user_id)
+    return session.exec(statement).all() 

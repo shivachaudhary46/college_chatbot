@@ -95,6 +95,34 @@ async def login_an_account(data: Annotated[OAuth2PasswordRequestForm, Depends()]
 
     return Token(access_token=token, token_type="bearer")
 
+from models import Attendance, Fees,
+
+# ======= Attendance ENDPOINTS ===========
+@app.post("/users/{user_id}/attendance/")
+def add_attendance(
+    user_id: int, 
+    attendance: Attendance, 
+    session: SessionDep
+):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not Found")
+    
+    attendance.user_id = user_id
+    session.add(attendance)
+    session.commit()
+    session.refresh(attendance)
+    return attendance
+
+@app.get("user/{user_id}/attendance/", response_model=List[Attendance]):
+def get_attendance(user_id: int, session: SessionDep):
+    user = session.get(User, user_id)
+    if not user :
+        raise HTTPException(status_code=404, detail="User not Found")
+    
+    return get_user_attendance(session, user_id)
+
+
 '''
 show current user
 '''
