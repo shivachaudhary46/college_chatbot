@@ -1,96 +1,84 @@
-# ======================================
-# ======== important module ============
-from sqlmodel import select
-from datetime import timedelta
+# main.py or your FastAPI startup file
+"""
+Integration example - combining chatbot with existing routes
+"""
 
-from typing import Annotated, TYPE_CHECKING
-from fastapi import FastAPI, Query, HTTPException, Depends
-from fastapi.security import OAuth2PasswordRequestForm
-from models import User, Token, Info
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from database import create_all_db_tables
+from routes import app as routes_app
+from chatbot import app as chatbot_app
 
-from dotenv import load_dotenv
-import os 
+# Create main app
+app = FastAPI(title="Student Management System with AI Chatbot")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-from database import SessionDep, create_all_db_tables
-from login import authenticate_user, create_access_token, get_current_user
-
-load_dotenv()
-
-ACCESS_TOKEN_EXPIRE = int(os.getenv("ACCESS_TOKEN_EXPIRE"))
-
-app = FastAPI() 
+# Include routers
+app.include_router(routes_app.router, prefix="/api", tags=["students"])
+app.include_router(chatbot_app.router, prefix="/api/chat", tags=["chatbot"])
 
 @app.on_event("startup")
-def on_startup():
+def startup():
     create_all_db_tables()
 
-# ===== Create an account ======
-@app.post("/create_an_account/")
-def create_an_account(info: Info, session: SessionDep):
-    info.set_password(info.hashed_password)
-    user = User(**info.model_dump())
-    session.add(user)
-    session.commit()
+@app.get("/")
+def read_root():
+    return {
+        "message": "Welcome to Student Management System",
+        "docs": "/docs",
+        "chat_endpoint": "/api/chat/chat"
+    }
 
-    info.hashed_password = ""
-    return info
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", reload=True, host="0.0.0.0", port=8000)
 
-# ===== read all account ======
-@app.get("/create_an_account/")
-def read_all_account(
-    session: SessionDep, 
-    offset: int = 0, 
-    limit: Annotated[int, Query(le=100)] = 100,
-) -> list[User]:
-    statement = select(User).offset(offset).limit(limit)
-    results = session.exec(statement)
-    accounts = results.all()
-    return accounts
 
-# ===== read one account ======
-@app.get("/create_an_account/{username}")
-def read_one_account(username: str, session: SessionDep) -> User:
-    statement = select(User).where(User.username == username)
-    results = session.exec(statement)
-    account = results.one()
-    
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not Found")
-    return account 
+# =============== Example Usage ==================
 
-# ===== delete one account ======
-@app.delete("/create_an_account/{username}")
-def delete_one_account(username: str, session: SessionDep):
-    statement = select(User).where(User.username == username)
-    results = session.exec(statement)
-    account = results.one()
+# Example 1: User asking for attendance
+# POST /api/chat/chat
+# {
+#   "username": "shivachaudhary",
+#   "query": "Can you tell me my attendance status?"
+# }
+# Response:
+# {
+#   "response": "Hey there! 👋 Let me check your attendance for you...
+#                Looking at your records, you've been doing great! 
+#                Your attendance is solid and consistent...",
+#   "query_type": "attendance"
+# }
 
-    if not account: 
-        raise HTTPException(status_code=404, detail="Hero not found")
-    session.delete(account)
-    session.commit()
-    return {"ok": True}
+# Example 2: User asking for college info
+# POST /api/chat/chat
+# {
+#   "username": "shivachaudhary",
+#   "query": "What courses does the college offer?"
+# }
+# Response:
+# {
+#   "response": "Great question! Our college offers comprehensive programs in...
+#                Here are some popular choices...",
+#   "query_type": "college_info"
+# }
 
-# ======= login an account ===========
-@app.post("/token")
-async def login_an_account(data: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep) -> Token:
-    user = authenticate_user(data.username, data.password, session)
-    if not user: 
-        raise HTTPException(status_code=400, detail="invalid Username or password")
-    
-    access_time = timedelta(minutes=ACCESS_TOKEN_EXPIRE)
-    token = create_access_token(
-        data = {"sub": user.username}, expire_time = access_time
-    )
-
-    if token is None :
-        raise HTTPException(status_code=400, detail="invalid username or password")
-
-    return Token(access_token=token, token_type="bearer")
-
-# ========= show current user ===========
-@app.get("/token")
-async def get_current_username(current_user: Annotated[User, Depends(get_current_user)]):
-    return {"user": current_user.username}
-
+# Example 3: General query
+# POST /api/chat/chat
+# {
+#   "username": "shivachaudhary",
+#   "query": "How to prepare for coding interviews?"
+# }
+# Response:
+# {
+#   "response": "That's a fantastic question! Here are some great strategies...",
+#   "query_type": "general"
+# }
