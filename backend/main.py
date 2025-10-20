@@ -29,7 +29,7 @@ from schemas import (
     Token, UserDataResponse
 )
 from utilities import authenticate_user, create_access_token, get_current_user
-from chatbot_module import setup_chatbot_routes  # New module with chatbot routes
+from chatbot import setup_chatbot_routes  # New module with chatbot routes
 
 load_dotenv(find_dotenv(), override=True)
 
