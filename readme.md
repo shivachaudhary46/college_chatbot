@@ -62,3 +62,59 @@ fees table
 ├── payment_status
 ├── last_payment_date
 └── created_at
+
+
+chatbot_college_websites/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # Application entry point & configuration
+│   ├── config.py            # Configuration settings
+│   ├── dependencies.py      # Shared dependencies
+│   │
+│   ├── api/                 # API layer
+│   │   ├── __init__.py
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── chatbot.py   # Chatbot endpoints
+│   │   │   ├── students.py  # Student CRUD endpoints
+│   │   │   └── admin.py     # Admin endpoints
+│   │   └── deps.py          # Route dependencies
+│   │
+│   ├── core/                # Core functionality
+│   │   ├── __init__.py
+│   │   ├── database.py      # Database connection
+│   │   └── security.py      # Auth & security
+│   │
+│   ├── models/              # Database models (SQLAlchemy/ORM)
+│   │   ├── __init__.py
+│   │   ├── student.py
+│   │   ├── conversation.py
+│   │   └── user.py
+│   │
+│   ├── schemas/             # Pydantic schemas
+│   │   ├── __init__.py
+│   │   ├── student.py
+│   │   ├── chatbot.py
+│   │   └── user.py
+│   │
+│   ├── services/            # Business logic
+│   │   ├── __init__.py
+│   │   ├── chatbot_service.py
+│   │   ├── student_service.py
+│   │   └── ai_service.py
+│   │
+│   └── utils/               # Utility functions
+│       ├── __init__.py
+│       └── helpers.py
+│
+├── backend/                 # If you have additional backend code
+├── frontend/                # Frontend code
+├── learning/                # ML/AI models & training
+├── tests/                   # Test files
+│   ├── __init__.py
+│   ├── test_api/
+│   └── test_services/
+├── .env
+├── .gitignore
+├── requirements.txt
+└── README.md

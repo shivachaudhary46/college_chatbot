@@ -1,4 +1,4 @@
-from backend.LoginBackend.variables import user_data, attendance_data, fees_data, marks_data
+from back.LoginBackend.variables import user_data, attendance_data, fees_data, marks_data
 from functions import add_user, add_attendance, add_fees, add_marks, get_user_with_all_data
 
 # ========= insert all data to database ==========

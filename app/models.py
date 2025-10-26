@@ -1,5 +1,8 @@
 # models.py
-
+"""
+SQLModel database models - NO IMPORTS FROM OTHER APP MODULES
+Only external dependencies here
+"""
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
 from pwdlib import PasswordHash

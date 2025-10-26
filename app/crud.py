@@ -10,7 +10,7 @@ def get_user_by_username(session: Session, username: str) -> Optional[User]:
     statement = select(User).where(User.username == username)
     return session.exec(statement).first()
 
-def get_user_by_id(session: Session, user_id: int) -> Optional[User]:
+def get_user_by_id(session: Session, user_id: str) -> Optional[User]:
     """Fetch user by ID"""
     return session.get(User, user_id)
 

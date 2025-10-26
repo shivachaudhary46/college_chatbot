@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv, find_dotenv
 
+
 from database import create_all_db_tables
-from chatbot import setup_chatbot_routes
+from chatbot import setup_chatbot_routes  
 
 load_dotenv(find_dotenv(), override=True)
 
@@ -55,8 +56,7 @@ def health_check():
 
 # Include student management routes
 print("Loading student management routes...")
-from routes import app as routes_app
-app.mount("/", routes_app)
+# Note: Import and include student routes here after all dependencies are set
 
 # Include chatbot routes
 print("Loading chatbot routes...")

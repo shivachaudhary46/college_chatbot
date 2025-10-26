@@ -1,13 +1,11 @@
 # chatbot.py
-"""
-A chatbot module that integrates with main FastAPI app
-"""
 import os
 from enum import Enum
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
 from typing import Annotated
 from dotenv import load_dotenv, find_dotenv
+from .schemas import QueryType, ChatMessage, ChatResponse
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
@@ -18,21 +16,6 @@ from database import SessionDep
 from crud import get_user_by_username, get_user_attendance, get_user_fees, get_user_marks
 
 load_dotenv(find_dotenv(), override=True)
-
-# ==== Chatbot ==== 
-class QueryType(str, Enum):
-    ATTENDANCE = "attendance"
-    MARKS = "marks"
-    FEES = "fees"
-    COLLEGE_INFO = "college_info"
-    GENERAL = "general"
-
-class ChatMessage(BaseModel):
-    username: str
-    query: str
-
-class ChatResponse(BaseModel):
-    response: str
 
 # =============== Query Classification ==================
 def classify_query(query: str) -> QueryType:
@@ -175,7 +158,6 @@ Please provide a helpful and friendly response."""
     
     return response.strip()
 
-# =============== Main Chat Handler ==================
 async def handle_chat_query(message: ChatMessage, session: SessionDep) -> ChatResponse:
     """Main chat handler - process user query"""
     
@@ -213,34 +195,3 @@ async def handle_chat_query(message: ChatMessage, session: SessionDep) -> ChatRe
         response = get_general_search_response(query)
     
     return ChatResponse(response=response, query_type=query_type)
-
-# =============== Setup Function ==================
-def setup_chatbot_routes(app):
-    """Add chatbot routes to the main FastAPI app"""
-    
-    @app.post("/api/v1/chat", response_model=ChatResponse)
-    async def chat(message: ChatMessage, session: SessionDep):
-        """Main chat endpoint"""
-        return await handle_chat_query(message, session)
-    
-    @app.get("/api/v1/chat/info")
-    async def chat_info():
-        """Get chatbot info"""
-        return {
-            "name": "Student Assistant Chatbot",
-            "version": "1.0",
-            "capabilities": [
-                "Answer questions about your attendance",
-                "Check your marks and grades",
-                "Query fee payment status",
-                "Get college information",
-                "Answer general questions"
-            ],
-            "example_queries": [
-                "Can you tell me my attendance?",
-                "What are my marks?",
-                "What's my fee status?",
-                "Tell me about the college",
-                "How to prepare for exams?"
-            ]
-        }
