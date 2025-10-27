@@ -54,3 +54,21 @@ def create_marks(session: Session, marks: Marks) -> Marks:
     session.commit()
     session.refresh(marks)
     return marks 
+
+# ====== Attendance Operations =====
+def get_user_attendance(session: Session, user_id: str) -> List[Attendance]:
+    """Get all attendance records for a user"""
+    statement = select(Attendance).where(Attendance.user_id == user_id)
+    return session.exec(statement).all()
+
+# ===== Marks Operations ===== 
+def get_user_marks(session: Session, user_id: str) -> List[Marks]:
+    """Get all marks records for a user"""
+    statement = select(Marks).where(Marks.user_id == user_id)
+    return session.exec(statement).all()
+
+# ====== Fees Operations ===== 
+def get_user_fees(session: Session, user_id: str) -> List[Fees]:
+    """Get all fee records for a user"""
+    statement = select(Fees).where(Fees.user_id == user_id)
+    return session.exec(statement).all()

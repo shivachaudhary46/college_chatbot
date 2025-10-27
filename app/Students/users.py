@@ -1,9 +1,11 @@
-from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token
+from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType
 from .database import SessionDep, create_all_db_tables
 from .models import User, Attendance, Fees, Marks
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user
+from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks
 from .utilities import hasher 
 from .OAuth import authenticate_user, create_access_token, get_current_user
+from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
+
 
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import FastAPI, HTTPException, Query, Depends
@@ -149,3 +151,66 @@ async def login(
 async def read_current_user(current_user: Annotated[User, Depends(get_current_user)]):
     """Get current logged-in user info"""
     return current_user
+
+
+# ===== chatbot =====
+@app.post("/api/v1/chat", response_model=ChatResponse)
+async def chat(message: ChatMessage, session: SessionDep):
+    """Main chat handler - process user query"""
+    
+    username = message.username
+    query = message.query
+    
+    # Verify user exists
+    user = get_user_by_username(session, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Classify the query
+    query_type = classify_query(query)
+    
+    # Route to appropriate handler
+    if query_type == QueryType.ATTENDANCE:
+        attendance_records = get_user_attendance(session, user.id)
+        formatted_data = format_attendance_data(attendance_records)
+        response = get_conversational_response(formatted_data, query)
+        
+    elif query_type == QueryType.MARKS:
+        marks_records = get_user_marks(session, user.id)
+        formatted_data = format_marks_data(marks_records)
+        response = get_conversational_response(formatted_data, query)
+        
+    elif query_type == QueryType.FEES:
+        fees_records = get_user_fees(session, user.id)
+        formatted_data = format_fees_data(fees_records)
+        response = get_conversational_response(formatted_data, query)
+        
+    elif query_type == QueryType.COLLEGE_INFO:
+        response = get_college_info_response(query)
+        
+    else:  # GENERAL
+        response = get_general_search_response(query)
+    
+    return ChatResponse(response=response, query_type=query_type)
+
+@app.get("/api/v1/chat/info")
+async def chat_info():
+    """Get chatbot info"""
+    return {
+            "name": "Student Assistant Chatbot",
+            "version": "1.0",
+            "capabilities": [
+                "Answer questions about your attendance",
+                "Check your marks and grades",
+                "Query fee payment status",
+                "Get college information",
+                "Answer general questions"
+            ],
+            "example_queries": [
+                "Can you tell me my attendance?",
+                "What are my marks?",
+                "What's my fee status?",
+                "Tell me about the college",
+                "How to prepare for exams?"
+            ]
+        }

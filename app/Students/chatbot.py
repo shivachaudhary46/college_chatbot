@@ -1,21 +1,22 @@
 # chatbot.py
+"""
+A chatbot module that integrates with main FastAPI app
+"""
 import os
 from enum import Enum
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
 from typing import Annotated
 from dotenv import load_dotenv, find_dotenv
-from .schemas import QueryType, ChatMessage, ChatResponse
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
 from langchain import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 
-from database import SessionDep
-from crud import get_user_by_username, get_user_attendance, get_user_fees, get_user_marks
-
+from .schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
+
 
 # =============== Query Classification ==================
 def classify_query(query: str) -> QueryType:
@@ -158,40 +159,45 @@ Please provide a helpful and friendly response."""
     
     return response.strip()
 
-async def handle_chat_query(message: ChatMessage, session: SessionDep) -> ChatResponse:
-    """Main chat handler - process user query"""
+# # ===== Main Chat Handler =======
+# async def handle_chat_query(message: ChatMessage, session: SessionDep) -> ChatResponse:
+#     """Main chat handler - process user query"""
     
-    username = message.username
-    query = message.query
+#     username = message.username
+#     query = message.query
     
-    # Verify user exists
-    user = get_user_by_username(session, username)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+#     # Verify user exists
+#     user = get_user_by_username(session, username)
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
     
-    # Classify the query
-    query_type = classify_query(query)
+#     # Classify the query
+#     query_type = classify_query(query)
     
-    # Route to appropriate handler
-    if query_type == QueryType.ATTENDANCE:
-        attendance_records = get_user_attendance(session, user.id)
-        formatted_data = format_attendance_data(attendance_records)
-        response = get_conversational_response(formatted_data, query)
+#     # Route to appropriate handler
+#     if query_type == QueryType.ATTENDANCE:
+#         attendance_records = get_user_attendance(session, user.id)
+#         formatted_data = format_attendance_data(attendance_records)
+#         response = get_conversational_response(formatted_data, query)
         
-    elif query_type == QueryType.MARKS:
-        marks_records = get_user_marks(session, user.id)
-        formatted_data = format_marks_data(marks_records)
-        response = get_conversational_response(formatted_data, query)
+#     elif query_type == QueryType.MARKS:
+#         marks_records = get_user_marks(session, user.id)
+#         formatted_data = format_marks_data(marks_records)
+#         response = get_conversational_response(formatted_data, query)
         
-    elif query_type == QueryType.FEES:
-        fees_records = get_user_fees(session, user.id)
-        formatted_data = format_fees_data(fees_records)
-        response = get_conversational_response(formatted_data, query)
+#     elif query_type == QueryType.FEES:
+#         fees_records = get_user_fees(session, user.id)
+#         formatted_data = format_fees_data(fees_records)
+#         response = get_conversational_response(formatted_data, query)
         
-    elif query_type == QueryType.COLLEGE_INFO:
-        response = get_college_info_response(query)
+#     elif query_type == QueryType.COLLEGE_INFO:
+#         response = get_college_info_response(query)
         
-    else:  # GENERAL
-        response = get_general_search_response(query)
+#     else:  # GENERAL
+#         response = get_general_search_response(query)
     
-    return ChatResponse(response=response, query_type=query_type)
+#     return ChatResponse(response=response, query_type=query_type)
+
+
+    
+
