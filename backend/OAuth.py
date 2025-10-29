@@ -34,7 +34,10 @@ username and dump in to the UserInDB class.
 def get_user(username: str, session: SessionDep) -> User:
     statement = select(User).where(User.username == username)
     results = session.exec(statement)
-    account = results.one()
+    account = results.first()
+
+    if not account:
+        return None
 
     return User(**account.model_dump())
 

@@ -10,7 +10,7 @@ from datetime import datetime
 
 hasher = PasswordHash.recommended()
 
-# =============== User Model ==================
+# ====== User Model ======
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
@@ -27,11 +27,11 @@ class User(SQLModel, table=True):
     fees_records: List["Fees"] = Relationship(back_populates="user")
     marks_records: List["Marks"] = Relationship(back_populates="user")
 
-# =============== Attendance Model ==================
+# ====== Attendance Model ======
 class Attendance(SQLModel, table=True):
     """Attendance model for 2080 Batch CSIT students"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
+    user_id: str = Field(foreign_key="user.username", index=True)
     
     month: str = Field(default="Ashoj")
     semester: str = Field(default="4th")
@@ -41,11 +41,11 @@ class Attendance(SQLModel, table=True):
     
     user: Optional[User] = Relationship(back_populates="attendance_records")
 
-# =============== Fees Model ==================
+# ====== Fees Model ========
 class Fees(SQLModel, table=True):
     """Fee Payment tracking model for CSIT students"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
+    user_id: str = Field(foreign_key="user.username", index=True)
     
     semester: int = Field(default=0)
     total_paid: int = Field(default=0)
@@ -65,7 +65,7 @@ class Fees(SQLModel, table=True):
 class Marks(SQLModel, table=True):
     """Student Marks model for CSIT 2080 Batch"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
+    user_id: str = Field(foreign_key="user.username", index=True)
     
     semester: str = Field(default="4th")
     subject: str
@@ -81,35 +81,4 @@ class Marks(SQLModel, table=True):
         super().__init__(**data)
         self.status = "Pass" if self.total_marks >= 24 else "Fail"
 
-# =============== Pydantic Schemas ==================
-from pydantic import BaseModel
 
-class UserCreate(BaseModel):
-    username: str
-    full_name: str
-    email: str
-    batch: str
-    program: str
-    password: str
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    full_name: str
-    email: str
-    batch: str
-    program: str
-    created_at: datetime
-    attendance_records: List[Attendance] = []
-    fees_records: List[Fees] = []
-    marks_records: List[Marks] = []
-
-    class Config:
-        from_attributes = True
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: str

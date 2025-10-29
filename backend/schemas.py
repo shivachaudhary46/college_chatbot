@@ -1,12 +1,9 @@
-# schemas.py
-"""
-Pydantic request/response schemas with proper datetime handling
-"""
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional, List
+from enum import Enum
 
-# =============== User Schemas ==================
+# ===== User Schemas =====
 class UserCreate(BaseModel):
     username: str
     full_name: str
@@ -15,6 +12,7 @@ class UserCreate(BaseModel):
     program: str
     password: str
 
+# ===== UserResponse =====
 class UserResponse(BaseModel):
     id: int
     username: str
@@ -27,7 +25,7 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# =============== Attendance Schemas ==================
+# ===== Attendance Schemas =====
 class AttendanceCreate(BaseModel):
     month: str
     semester: str
@@ -40,10 +38,11 @@ class AttendanceCreate(BaseModel):
         if not 0 <= v <= 24: # why 24 ? because our class only runs 24 days in one month. 
             raise ValueError('Total attendance must be between 0 and 24')
         return v
-
+        
+# ==== Attendance Response =====
 class AttendanceResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     month: str
     semester: str
     total: int
@@ -53,7 +52,7 @@ class AttendanceResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# =============== Fees Schemas ==================
+# ===== Fees Schemas =====
 class FeesCreate(BaseModel):
     semester: int
     total_paid: int = 0
@@ -75,7 +74,7 @@ class FeesCreate(BaseModel):
 
 class FeesResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     semester: int
     total_paid: int
     amount_due: int
@@ -86,7 +85,7 @@ class FeesResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# =============== Marks Schemas ==================
+# ===== Marks Schemas =====
 class MarksCreate(BaseModel):
     semester: str
     subject: str
@@ -113,7 +112,7 @@ class MarksCreate(BaseModel):
 
 class MarksResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     semester: str
     subject: str
     total_marks: int
@@ -125,25 +124,25 @@ class MarksResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# =============== Auth Schemas ==================
+# ==== Chatbot ==== 
+class QueryType(str, Enum):
+    ATTENDANCE = "attendance"
+    MARKS = "marks"
+    FEES = "fees"
+    COLLEGE_INFO = "college_info"
+    GENERAL = "general"
+
+class ChatMessage(BaseModel):
+    username: str
+    query: str
+
+class ChatResponse(BaseModel):
+    response: str
+    query_type: QueryType
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     username: str
-
-# =============== Combined Response Schemas ==================
-class UserDataResponse(BaseModel):
-    id: int
-    username: str
-    full_name: str
-    email: str
-    batch: str
-    program: str
-    attendance: List[AttendanceResponse] = []
-    fees: List[FeesResponse] = []
-    marks: List[MarksResponse] = []
-
-    class Config:
-        from_attributes = True

@@ -171,17 +171,17 @@ async def chat(message: ChatMessage, session: SessionDep):
     
     # Route to appropriate handler
     if query_type == QueryType.ATTENDANCE:
-        attendance_records = get_user_attendance(session, user.id)
+        attendance_records = get_user_attendance(session, username)
         formatted_data = format_attendance_data(attendance_records)
         response = get_conversational_response(formatted_data, query)
         
     elif query_type == QueryType.MARKS:
-        marks_records = get_user_marks(session, user.id)
+        marks_records = get_user_marks(session, username)
         formatted_data = format_marks_data(marks_records)
         response = get_conversational_response(formatted_data, query)
         
     elif query_type == QueryType.FEES:
-        fees_records = get_user_fees(session, user.id)
+        fees_records = get_user_fees(session, username)
         formatted_data = format_fees_data(fees_records)
         response = get_conversational_response(formatted_data, query)
         

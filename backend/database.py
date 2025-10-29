@@ -1,4 +1,4 @@
-# ====== Important necessary modules ===========
+# ===== Import necessary modules ====
 from typing import Annotated
 from fastapi import Depends
 from sqlmodel import create_engine, SQLModel, Session
