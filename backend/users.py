@@ -1,9 +1,9 @@
-from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType
+from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse
 from .database import SessionDep, create_all_db_tables
-from .models import User, Attendance, Fees, Marks
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks
+from .models import User, Attendance, Fees, Marks, Course, Notice, Assignment
+from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks, create_course_records, create_assignment_records
 from .utilities import hasher 
-from .OAuth import authenticate_user, create_access_token, get_current_user
+from .OAuth import authenticate_user, create_access_token, get_current_user, role_required
 from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
 
 from fastapi.security import OAuth2PasswordRequestForm
@@ -22,7 +22,7 @@ def startup():
     """Initialize database on startup"""
     create_all_db_tables()
 
-# ===== USER ENDPOINTS =====
+# ===== USER ENDPOINTS ===== # Admin, student, user
 @app.post("/api/v1/users/", response_model=UserResponse)
 def create_new_user(user_data: UserCreate, session: SessionDep):
     """Create a new user"""
@@ -45,7 +45,7 @@ def create_new_user(user_data: UserCreate, session: SessionDep):
 # ==== Teacher has access to attendance, marks of students
 
 # ==== admin has access to every post endpoints ====
-
+# teacher, admin
 @app.get("/api/v1/users/", response_model=List[UserResponse])
 def read_all_users(
     session: SessionDep,
@@ -55,6 +55,7 @@ def read_all_users(
     """Get all users"""
     return get_all_users(session, skip, limit)
 
+# admin
 @app.get("/api/v1/users/{username}", response_model=UserResponse)
 def read_user(username: str, session: SessionDep):
     """Get a specific user by username"""
@@ -63,6 +64,7 @@ def read_user(username: str, session: SessionDep):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+# admin
 @app.delete("/api/v1/users/{username}")
 def delete_user_by_username(username: str, session: SessionDep):
     """Delete a user"""
@@ -72,72 +74,149 @@ def delete_user_by_username(username: str, session: SessionDep):
     delete_user(session, user.id)
     return {"ok": True}
 
-# ===== ATTENDANCE ENDPOINTS =====
-@app.post("/api/v1/users/{user_id}/attendance/", response_model=AttendanceResponse)
-def add_user_attendance(
-    user_id: str,
+# ===== Give access to insert datas to teacher only ====
+# ===== But don't give accesss to insert fees for teacher ====
+
+# ===== ATTENDANCE ENDPOINTS ===== # teacher, admin 
+@app.post("/api/v1/users/attendance/", response_model=AttendanceResponse)
+def mark_attendance(
+    students_username: str, 
     attendance_data: AttendanceCreate,
-    session: SessionDep
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
 ):
-    """Add attendance record for a user"""
-    user = get_user_by_username(session, user_id)
+    """Add attendance record for a teacher"""
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="invalid credentials token")
         
+    student = get_user_by_username(session, students_username)
+
+    if not student:
+        raise HTTPException(status_code=404, detail="student not found")
+    
     attendance = Attendance(
-        user_id=user_id,
+        user_id=student.id,
         month=attendance_data.month,
         semester=attendance_data.semester,
         total=attendance_data.total,
-        attendee_status=attendance_data.attendee_status
+        attendee_status=attendance_data.attendee_status,
+        marked_by=user.id
     )
     return create_attendance(session, attendance)
 
-# ===== FEES ENDPOINTS =======
+# ===== FEES ENDPOINTS ======= # admin 
 @app.post("/api/v1/users/{user_id}/fee/", response_model=FeesResponse)
 def add_user_fee(
-    user_id: str, 
+    student_username: str, 
     fee_data: FeesCreate,
-    session: SessionDep
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
 ):
-    """Add fees record for a user"""
-    user = get_user_by_username(session, user_id)
+    """Add fees record for a student (teacher/admin access only)"""
 
+    # check token validity 
     if not user:
-        raise HTTPException(status_code=404, detail="user not found")
+        raise HTTPException(status_code=404, detail="invalid credentials token")
     
+    student = get_user_by_username(session, student_username)
+
+    if not student:
+        raise HTTPException(status_code=404, detail="student not found")
+
     fees = Fees(
-        user_id=user_id, 
+        user_id=student.id, 
         semester=fee_data.semester,
-        total_paid=fee_data.total_paid,
-        last_payment_date=fee_data.last_payment_date
+        total_paid=fee_data.total_paid
     )
 
     return create_fees(session, fees)
 
-# ===== MARKS ENDPOINTS ======
-@app.post("/api/v1/users/{user_id}/marks/", response_model=MarksResponse)
+# ===== MARKS ENDPOINTS ====== # teacher, admin
+@app.post("/api/v1/users/{student_username}/marks/", response_model=MarksResponse)
 def add_marks_record(
-    user_id: str,
+    student_username: str,
     marks_data: MarksCreate,
-    session: SessionDep
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
 ):
-    """Add marks record for a user"""
-    user = get_user_by_username(session, user_id)
+    """Add marks record for a student (teacher/admin access only)"""
+
+    # Validate authenticated user
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-        
+        raise HTTPException(status_code=401, detail="Invalid credentials token")
+
+    # Fetch the student by username
+    student = get_user_by_username(session, student_username)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Create marks record
     marks = Marks(
-            user_id=user_id,
-            semester=marks_data.semester,
-            subject=marks_data.subject,
-            total_marks=marks_data.total_marks,
-            grade=marks_data.grade,
-            exam_date=marks_data.exam_date
+        user_id=student.id,
+        semester=marks_data.semester,
+        subject=marks_data.subject,
+        total_marks=marks_data.total_marks,
+        grade=marks_data.grade,
+        exam_date=marks_data.exam_date
     )
+
     return create_marks(session, marks)
 
-# ==== Auth Endpoints ====
+# ===== COURSE ENDPOINTS ====== # teacher, admin
+@app.post("/api/v1/courses/", response_model=CourseResponse)
+def create_course(
+    course_data: CourseCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Create a new course (teacher/admin only)"""
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials token")
+
+    # Teachers can only create their own courses
+    teacher_id = user.id if user.role == "teacher" else course_data.teacher_id
+
+    course = Course(
+        name=course_data.name,
+        code=course_data.code,
+        teacher_id=teacher_id,
+    )
+    return create_course_records(session, course)
+
+# ===== ASSIGNMENT ENDPOINTS ====== # teacher, admin
+@app.post("/api/v1/courses/{course_id}/assignments/", response_model=AssignmentResponse)
+def add_assignment(
+    course_id: int,
+    assignment_data: AssignmentCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Add an assignment to a course (teacher/admin only)"""
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials token")
+
+    # Verify course exists
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Teacher can only add to their own courses
+    if user.role == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this course")
+
+    assignment = Assignment(
+        title=assignment_data.title,
+        description=assignment_data.description,
+        due_date=assignment_data.due_date,
+        course_id=course_id,
+        user_id=user.id,
+    )
+    return create_assignment_records(session, assignment)
+
+
+# ==== Auth Endpoints ==== # teacher, admin, students
 @app.post("/api/v1/token", response_model=Token)
 async def login(
     credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -159,16 +238,18 @@ async def read_current_user(current_user: Annotated[User, Depends(get_current_us
 
 # ===== chatbot =====
 @app.post("/api/v1/chat", response_model=ChatResponse)
-async def chat(message: ChatMessage, session: SessionDep):
+async def chat( 
+    message: ChatMessage, session: SessionDep,
+    user: User = Depends(role_required(["student", "teacher", "admin"])),
+):
     """Main chat handler - process user query"""
-    
-    username = message.username
-    query = message.query
-    
-    # Verify user exists
-    user = get_user_by_username(session, username)
+
+    # Validate authenticated user
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="Invalid credentials token")
+    
+    username = user.username
+    query = message.query
     
     # Classify the query
     query_type = classify_query(query)

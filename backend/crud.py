@@ -2,7 +2,7 @@
 from sqlmodel import Session, select
 from typing import Optional, List
 
-from .models import User, Attendance, Fees, Marks
+from .models import User, Attendance, Fees, Marks, Assignment, Course, Notice
 
 # ====== User Operations =====
 def get_user_by_username(session: Session, username: str) -> Optional[User]:
@@ -55,6 +55,30 @@ def create_marks(session: Session, marks: Marks) -> Marks:
     session.refresh(marks)
     return marks 
 
+# ==== Create Course Records =====
+def create_course_records(session: Session, course: Course) -> Course: 
+    """Create course record"""
+    session.add(course) 
+    session.commit()
+    session.refresh(course)
+    return course
+
+# ==== create assignments records
+def create_assignment_records(session: Session, assignment: Assignment) -> Assignment:
+    """Create course record"""
+    session.add(assignment) 
+    session.commit()
+    session.refresh(assignment)
+    return assignment
+
+# ==== create notice records
+def create_notice_records(session: Session, notices: Notice) -> Notice:
+    """Create course record"""
+    session.add(notices) 
+    session.commit()
+    session.refresh(notices)
+    return notices
+
 # ====== Attendance Operations =====
 def get_user_attendance(session: Session, user_id: str) -> List[Attendance]:
     """Get all attendance records for a user"""
@@ -72,3 +96,4 @@ def get_user_fees(session: Session, user_id: str) -> List[Fees]:
     """Get all fee records for a user"""
     statement = select(Fees).where(Fees.user_id == user_id)
     return session.exec(statement).all()
+

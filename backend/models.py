@@ -31,10 +31,10 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     # for users/students only 
-    attendance_records: List["Attendance"] = Relationship(back_populates="user")
+    attendance_records: List["Attendance"] = Relationship(back_populates="user", sa_relationship_kwargs={"foreign_keys": "[Attendance.user_id]"})
     fees_records: List["Fees"] = Relationship(back_populates="user")
     marks_records: List["Marks"] = Relationship(back_populates="user")
-    course: List["UserCourseLink"] = Relationship(back_populates="user") 
+    courses: List["UserCourseLink"] = Relationship(back_populates="user") 
 
     # for teachers/admins 
     created_notices: List["Notice"] = Relationship(back_populates="user")
@@ -56,8 +56,8 @@ class Notice(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.now)
     
     # Relationships
-    creator: Optional["User"] = Relationship(back_populates="user")      
-    course: Optional["Course"] = Relationship(back_populates="course")     
+    user: Optional["User"] = Relationship(back_populates="created_notices")      
+    course: Optional["Course"] = Relationship(back_populates="notices")     
 
 class Course(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -95,7 +95,7 @@ class UserCourseLink(SQLModel, table=True):
 class Attendance(SQLModel, table=True):
     """Attendance model for 2080 Batch CSIT students"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="user.username", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     
     month: str = Field(default="Ashoj")
     semester: str = Field(default="4th")
@@ -104,13 +104,16 @@ class Attendance(SQLModel, table=True):
     marked_by: Optional[int] = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=datetime.now)
     
-    user: Optional[User] = Relationship(back_populates="attendance_records")
+    user: Optional["User"] = Relationship(
+        back_populates="attendance_records",
+        sa_relationship_kwargs={"foreign_keys": "[Attendance.user_id]"}
+    )
 
 # ====== Fees Model ========
 class Fees(SQLModel, table=True):
     """Fee Payment tracking model for CSIT students"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="user.username", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     
     semester: int = Field(default=0)
     total_paid: int = Field(default=0)
@@ -123,14 +126,17 @@ class Fees(SQLModel, table=True):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.amount_due = 84000 - self.total_paid
+        total_fees = 84000
+        self.amount_due = max(total_fees - self.total_paid, 0)
         self.payment_status = "Paid" if self.amount_due == 0 else "Pending"
+        # Auto-set last payment time when record is created
+        self.last_payment_date = self.created_at
 
 # =============== Marks Model ==================
 class Marks(SQLModel, table=True):
     """Student Marks model for CSIT 2080 Batch"""
     id: int | None = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="user.username", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     
     semester: str = Field(default="4th")
     subject: str

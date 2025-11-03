@@ -44,11 +44,12 @@ class AttendanceCreate(BaseModel):
 # ==== Attendance Response =====
 class AttendanceResponse(BaseModel):
     id: int
-    user_id: str
+    user_id: int
     month: str
     semester: str
     total: int
     attendee_status: str
+    marked_by: int
     created_at: datetime
 
     class Config:
@@ -58,7 +59,6 @@ class AttendanceResponse(BaseModel):
 class FeesCreate(BaseModel):
     semester: int
     total_paid: int = 0
-    last_payment_date: Optional[datetime] = None
     
     @field_validator('semester')
     @classmethod
@@ -73,16 +73,16 @@ class FeesCreate(BaseModel):
         if v < 0:
             raise ValueError('Total paid cannot be negative')
         return v
+    
 
 class FeesResponse(BaseModel):
     id: int
-    user_id: str
+    user_id: int
     semester: int
     total_paid: int
     amount_due: int
     payment_status: str
     last_payment_date: Optional[datetime] = None
-    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -135,7 +135,6 @@ class QueryType(str, Enum):
     GENERAL = "general"
 
 class ChatMessage(BaseModel):
-    username: str
     query: str
 
 class ChatResponse(BaseModel):
@@ -148,3 +147,34 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str
+
+class CourseCreate(BaseModel):
+    name: str
+    code: str
+    teacher_id: Optional[int] = None  # Optional because teachers auto-assign themselves
+
+class CourseResponse(BaseModel):
+    id: int
+    name: str
+    code: str
+    teacher_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class AssignmentCreate(BaseModel):
+    title: str
+    description: str
+    due_date: datetime
+
+class AssignmentResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    due_date: datetime
+    course_id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
