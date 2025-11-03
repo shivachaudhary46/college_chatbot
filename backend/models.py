@@ -7,8 +7,15 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
 from pwdlib import PasswordHash
 from datetime import datetime
+from enum import Enum
 
 hasher = PasswordHash.recommended()
+
+# ===== Role Model =====
+class Role(str, Enum):
+    student = "student"
+    teacher = "teacher"
+    admin = "admin"
 
 # ====== User Model ======
 class User(SQLModel, table=True):
@@ -17,16 +24,73 @@ class User(SQLModel, table=True):
     full_name: str 
     email: str 
     batch: str
-    program: str 
+    program: str
+    role: Role = Field(default=Role.student)
     hashed_password: str 
-    disabled: bool = Field(default=False)
+    disabled: bool = Field(default=False) 
     created_at: datetime = Field(default_factory=datetime.now)
 
-    # Relationships
+    # for users/students only 
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
     fees_records: List["Fees"] = Relationship(back_populates="user")
     marks_records: List["Marks"] = Relationship(back_populates="user")
+    course: List["UserCourseLink"] = Relationship(back_populates="user") 
 
+    # for teachers/admins 
+    created_notices: List["Notice"] = Relationship(back_populates="user")
+    assignments: List["Assignment"] = Relationship(back_populates="user")
+    taught_courses: List["Course"] = Relationship(back_populates="teacher")
+
+class Notice(SQLModel, table=True):
+    """Notice board model for students, teachers, and admins."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    content: str
+    created_by: int = Field(foreign_key="user.id")
+    
+    target_batch: Optional[str] = None      # e.g., "2080"
+    target_program: Optional[str] = None    # e.g., "BSc CSIT"
+    course_id: Optional[int] = Field(default=None, foreign_key="course.id")
+    
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    
+    # Relationships
+    creator: Optional["User"] = Relationship(back_populates="user")      
+    course: Optional["Course"] = Relationship(back_populates="course")     
+
+class Course(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str 
+    code: str
+    teacher_id: Optional[int] = Field(default=None, foreign_key="user.id") 
+    
+    # relationship 
+    students: List["UserCourseLink"] = Relationship(back_populates="course")
+    assignments: List["Assignment"] = Relationship(back_populates="course")
+    teacher: Optional["User"] = Relationship(back_populates="taught_courses")
+    notices: List["Notice"] = Relationship(back_populates="course")
+
+class Assignment(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    description: str 
+    due_date: datetime
+
+    course_id: Optional[int] = Field(default=None, foreign_key="course.id")
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+
+    #relationships 
+    user: Optional["User"] = Relationship(back_populates="assignments")
+    course: Optional["Course"] = Relationship(back_populates="assignments")
+
+class UserCourseLink(SQLModel, table=True):
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id", primary_key=True)
+    course_id: Optional[int] = Field(default=None, foreign_key="course.id", primary_key=True)
+
+    course: Optional["Course"] = Relationship(back_populates="students")
+    user: Optional["User"] = Relationship(back_populates="courses")
+    
 # ====== Attendance Model ======
 class Attendance(SQLModel, table=True):
     """Attendance model for 2080 Batch CSIT students"""
@@ -37,7 +101,8 @@ class Attendance(SQLModel, table=True):
     semester: str = Field(default="4th")
     total: int
     attendee_status: str
-    created_at: datetime = Field(default=datetime.now())
+    marked_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.now)
     
     user: Optional[User] = Relationship(back_populates="attendance_records")
 

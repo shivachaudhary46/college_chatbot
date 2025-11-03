@@ -6,7 +6,6 @@ from .utilities import hasher
 from .OAuth import authenticate_user, create_access_token, get_current_user
 from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
 
-
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import FastAPI, HTTPException, Query, Depends
 from typing import List, Annotated
@@ -35,11 +34,17 @@ def create_new_user(user_data: UserCreate, session: SessionDep):
         username=user_data.username,
         full_name=user_data.full_name,
         email=user_data.email,
+        role=user_data.role,
         batch=user_data.batch,
         program=user_data.program,
         hashed_password=hasher.hash(user_data.password)
     )
     return create_user(session, user)
+
+# ==== Upload assignments for only Teachers =====
+# ==== Teacher has access to attendance, marks of students
+
+# ==== admin has access to every post endpoints ====
 
 @app.get("/api/v1/users/", response_model=List[UserResponse])
 def read_all_users(
@@ -151,7 +156,6 @@ async def login(
 async def read_current_user(current_user: Annotated[User, Depends(get_current_user)]):
     """Get current logged-in user info"""
     return current_user
-
 
 # ===== chatbot =====
 @app.post("/api/v1/chat", response_model=ChatResponse)

@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     username: str
     full_name: str
     email: str
+    role: str
     batch: str
     program: str
     password: str
@@ -18,6 +19,7 @@ class UserResponse(BaseModel):
     username: str
     full_name: str
     email: str
+    role: str
     batch: str
     program: str
     created_at: datetime
