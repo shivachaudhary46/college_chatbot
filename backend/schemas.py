@@ -13,7 +13,6 @@ class UserCreate(BaseModel):
     program: str
     password: str
 
-# ===== UserResponse =====
 class UserResponse(BaseModel):
     id: int
     username: str
@@ -41,7 +40,6 @@ class AttendanceCreate(BaseModel):
             raise ValueError('Total attendance must be between 0 and 24')
         return v
         
-# ==== Attendance Response =====
 class AttendanceResponse(BaseModel):
     id: int
     user_id: int
@@ -73,7 +71,6 @@ class FeesCreate(BaseModel):
         if v < 0:
             raise ValueError('Total paid cannot be negative')
         return v
-    
 
 class FeesResponse(BaseModel):
     id: int
@@ -126,7 +123,7 @@ class MarksResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ==== Chatbot ==== 
+# ==== Chatbot =====
 class QueryType(str, Enum):
     ATTENDANCE = "attendance"
     MARKS = "marks"
@@ -141,6 +138,7 @@ class ChatResponse(BaseModel):
     response: str
     query_type: QueryType
 
+# ===== Auth point =====
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -148,6 +146,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str
 
+# ===== Course Schemas ======
 class CourseCreate(BaseModel):
     name: str
     code: str
@@ -160,9 +159,9 @@ class CourseResponse(BaseModel):
     teacher_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-
+# ===== Assignment Schemas =====
 class AssignmentCreate(BaseModel):
     title: str
     description: str
@@ -174,7 +173,29 @@ class AssignmentResponse(BaseModel):
     description: str
     due_date: datetime
     course_id: int
-    user_id: int
+    teacher_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+# ====== Notices Schemas =======
+class NoticeCreate(BaseModel):
+    title: str
+    content: str
+    target_batch: Optional[str] = None
+    target_program: Optional[str] = None
+    course_id: Optional[int] = None
+
+class NoticeResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    created_by: int
+    target_batch: Optional[str]
+    target_program: Optional[str]
+    course_id: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

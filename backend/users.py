@@ -1,7 +1,7 @@
-from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse
+from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse, NoticeResponse, NoticeCreate
 from .database import SessionDep, create_all_db_tables
 from .models import User, Attendance, Fees, Marks, Course, Notice, Assignment
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks, create_course_records, create_assignment_records
+from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks, create_course_records, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice
 from .utilities import hasher 
 from .OAuth import authenticate_user, create_access_token, get_current_user, role_required
 from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
@@ -104,6 +104,14 @@ def mark_attendance(
     )
     return create_attendance(session, attendance)
 
+# get all student attendance
+
+# get attendance by id 
+
+# update attendance 
+
+# delete attendance 
+
 # ===== FEES ENDPOINTS ======= # admin 
 @app.post("/api/v1/users/{user_id}/fee/", response_model=FeesResponse)
 def add_user_fee(
@@ -130,6 +138,14 @@ def add_user_fee(
     )
 
     return create_fees(session, fees)
+
+# update fees records
+
+# delete fees records 
+
+# get all fees records
+
+# get student fees by id 
 
 # ===== MARKS ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/users/{student_username}/marks/", response_model=MarksResponse)
@@ -162,6 +178,14 @@ def add_marks_record(
 
     return create_marks(session, marks)
 
+# ===== get marks by id =====
+
+# ===== get all marks record of student ====
+
+# ===== update marks =====
+
+# ===== delete marks =====
+
 # ===== COURSE ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/courses/", response_model=CourseResponse)
 def create_course(
@@ -183,6 +207,14 @@ def create_course(
         teacher_id=teacher_id,
     )
     return create_course_records(session, course)
+
+# ===== update course ======
+
+# ===== get all course =====
+
+# ===== get course by id =====
+
+# ===== delete course ======
 
 # ===== ASSIGNMENT ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/courses/{course_id}/assignments/", response_model=AssignmentResponse)
@@ -211,12 +243,54 @@ def add_assignment(
         description=assignment_data.description,
         due_date=assignment_data.due_date,
         course_id=course_id,
-        user_id=user.id,
+        teacher_id=user.id,
     )
     return create_assignment_records(session, assignment)
 
+# ===== Update Assignment endpoints ======
+@app.put("/api/v1/assignments/{assignment_id}", response_model=AssignmentResponse)
+def update_assignment(
+    assignment_id: int,
+    assignment_data: AssignmentCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Update an assignment (teacher/admin only)"""
+
+    assignment = update_assignment(session, assignment_id, assignment_data)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return assignment
+
+# ===== delete assignment endpoints =====
+@app.delete("/api/v1/assignments/{assignment_id}")
+def delete_assignment_by_id(
+    assignment_id: int,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Delete an assignment by id (teacher/admin only)"""
+
+    if not delete_assignment(session, assignment_id):
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return {"message": "Assignment deleted successfully"}
+
+# ===== get all assignment ======
+@app.get("/api/v1/assignment/", response_model=List[AssignmentResponse])
+def get_all_recent_assignments(session: SessionDep):
+    """All users can view all notices"""
+    return get_all_course_recent_assignment(session)
+
+# ===== get assignment by id ======
+@app.get("/api/v1/assignment/{assignment_id}", response_model=AssignmentResponse)
+def get_notice_by_id_endpoint(assignment_id: int, session: SessionDep):
+    assignment = get_assignment_by_id(session, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="assignment not found")
+    return assignment
 
 # ==== Auth Endpoints ==== # teacher, admin, students
+# ========================  
 @app.post("/api/v1/token", response_model=Token)
 async def login(
     credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -236,7 +310,66 @@ async def read_current_user(current_user: Annotated[User, Depends(get_current_us
     """Get current logged-in user info"""
     return current_user
 
-# ===== chatbot =====
+# ************************************************
+# ************************************************
+# ===== NOTICE ENDPOINTS ===== # for teacher admin
+@app.post("/api/v1/notices/", response_model=NoticeResponse)
+def post_notice(
+    notice_data: NoticeCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"]))
+):
+    """Teachers or admins can post notices"""
+    notice = Notice(
+        title=notice_data.title,
+        content=notice_data.content,
+        created_by=user.id,
+        target_batch=notice_data.target_batch,
+        target_program=notice_data.target_program,
+        course_id=notice_data.course_id
+    )
+    return create_notice_records(session, notice)
+
+# ===== all users can view the notices =======
+# ======================================================
+@app.get("/api/v1/notices/", response_model=List[NoticeResponse])
+def get_notices(session: SessionDep):
+    """All users can view all notices"""
+    return get_all_notices(session)
+
+@app.get("/api/v1/notices/{notice_id}", response_model=NoticeResponse)
+def get_notice_by_id_endpoint(notice_id: int, session: SessionDep):
+    """Get a specific notice"""
+    notice = get_notice_by_id(session, notice_id)
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notice not found")
+    return notice
+
+@app.put("/api/v1/notices/{notice_id}", response_model=NoticeResponse)
+def update_notice_endpoint(
+    notice_id: int,
+    notice_data: NoticeCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"]))
+):
+    """Update a notice (only by teacher/admin)"""
+    notice = update_notice(session, notice_id, notice_data)
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notice not found")
+    return notice
+
+@app.delete("/api/v1/notices/{notice_id}")
+def delete_notice_endpoint(
+    notice_id: int,
+    session: SessionDep,
+    user: User = Depends(role_required(["admin"]))
+):
+    """Delete a notice (admin only)"""
+    if not delete_notice(session, notice_id):
+        raise HTTPException(status_code=404, detail="Notice not found")
+    return {"message": "Notice deleted successfully"}
+
+# ===== chatbot ===== Endpoints ======
 @app.post("/api/v1/chat", response_model=ChatResponse)
 async def chat( 
     message: ChatMessage, session: SessionDep,

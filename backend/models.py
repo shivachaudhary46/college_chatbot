@@ -46,7 +46,7 @@ class Notice(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     content: str
-    created_by: int = Field(foreign_key="user.id")
+    created_by: int = Field(foreign_key="user.id", index=True)
     
     target_batch: Optional[str] = None      # e.g., "2080"
     target_program: Optional[str] = None    # e.g., "BSc CSIT"
@@ -78,7 +78,7 @@ class Assignment(SQLModel, table=True):
     due_date: datetime
 
     course_id: Optional[int] = Field(default=None, foreign_key="course.id")
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    teacher_id: Optional[int] = Field(default=None, foreign_key="user.id")
 
     #relationships 
     user: Optional["User"] = Relationship(back_populates="assignments")
