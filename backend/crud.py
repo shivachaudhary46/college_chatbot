@@ -125,7 +125,6 @@ def update_fees(session: Session, fees_id: int, data: FeesCreate) -> Optional[Fe
     session.refresh(fees_record)
     return fees_record
 
-
 def get_all_fees(session: Session) -> List[Fees]:
     """Get all fee records"""
     statement = select(Fees)
@@ -165,42 +164,160 @@ def delete_fees_by_user_id(session: Session, user_id: int) -> int:
     return len(records)
 
 
-# ==== Marks Operations =====
-def create_marks(session: Session, marks: Marks) -> Marks: 
+# ===== Marks Operations =====
+def create_marks(session: Session, marks: Marks) -> Marks:
     """Create marks record"""
     session.add(marks)
     session.commit()
     session.refresh(marks)
-    return marks 
+    return marks
 
-# ==== Create Course Records =====
-def create_course_records(session: Session, course: Course) -> Course: 
-    """Create course record"""
-    session.add(course) 
+def update_marks(session: Session, marks_id: int, data: MarksCreate) -> Optional[Marks]:
+    """Update marks record"""
+    record = session.get(Marks, marks_id)
+    if not record:
+        return None
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(record, field, value)
+    record.updated_at = datetime.now()
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+def get_all_marks(session: Session) -> List[Marks]:
+    """Get all marks"""
+    statement = select(Marks)
+    return session.exec(statement).all()
+
+def get_marks_by_id(session: Session, marks_id: int) -> Optional[Marks]:
+    """Fetch marks by ID"""
+    return session.get(Marks, marks_id)
+
+def get_marks_by_user_id(session: Session, user_id: int) -> List[Marks]:
+    """Fetch all marks for a user"""
+    statement = select(Marks).where(Marks.user_id == user_id)
+    return session.exec(statement).all()
+
+def delete_marks_by_id(session: Session, marks_id: int) -> bool:
+    """Delete marks record by ID"""
+    record = session.get(Marks, marks_id)
+    if not record:
+        return False
+    session.delete(record)
+    session.commit()
+    return True
+
+def delete_marks_by_user_id(session: Session, user_id: int) -> int:
+    """Delete all marks for a user"""
+    statement = select(Marks).where(Marks.user_id == user_id)
+    records = session.exec(statement).all()
+    if not records:
+        return 0
+    for r in records:
+        session.delete(r)
+    session.commit()
+    return len(records)
+
+# ===== Course Operations =====
+def create_course_records(session: Session, course: Course) -> Course:
+    """Create a new course record"""
+    session.add(course)
     session.commit()
     session.refresh(course)
     return course
 
+
+def update_course(session: Session, course_id: int, data: CourseCreate) -> Optional[Course]:
+    """Update course record"""
+    record = session.get(Course, course_id)
+    if not record:
+        return None
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(record, field, value)
+    record.updated_at = datetime.now()
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+def get_all_courses(session: Session) -> List[Course]:
+    """Get all courses"""
+    statement = select(Course)
+    return session.exec(statement).all()
+
+
+def get_course_by_id(session: Session, course_id: int) -> Optional[Course]:
+    """Fetch course by ID"""
+    return session.get(Course, course_id)
+
+
+def delete_course_by_id(session: Session, course_id: int) -> bool:
+    """Delete course by ID"""
+    record = session.get(Course, course_id)
+    if not record:
+        return False
+    session.delete(record)
+    session.commit()
+    return True
+
+
 # ==== create assignments records
+# ===== Assignment Operations =====
 def create_assignment_records(session: Session, assignment: Assignment) -> Assignment:
-    """Create course record"""
-    session.add(assignment) 
+    """Create assignment record"""
+    session.add(assignment)
     session.commit()
     session.refresh(assignment)
     return assignment
 
-# ====== Attendance Operations =====
-def get_user_attendance(session: Session, user_id: str) -> List[Attendance]:
-    """Get all attendance records for a user"""
-    statement = select(Attendance).where(Attendance.user_id == user_id)
+
+def update_assignment(session: Session, assignment_id: int, data: AssignmentCreate) -> Optional[Assignment]:
+    """Update assignment"""
+    record = session.get(Assignment, assignment_id)
+    if not record:
+        return None
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(record, field, value)
+    record.updated_at = datetime.now()
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+def get_all_assignments(session: Session) -> List[Assignment]:
+    """Get all assignments"""
+    statement = select(Assignment)
     return session.exec(statement).all()
 
-# ===== Marks Operations ===== 
-def get_user_marks(session: Session, user_id: str) -> List[Marks]:
-    """Get all marks records for a user"""
-    statement = select(Marks).where(Marks.user_id == user_id)
+
+def get_assignment_by_id(session: Session, assignment_id: int) -> Optional[Assignment]:
+    """Fetch assignment by ID"""
+    return session.get(Assignment, assignment_id)
+
+
+def get_assignment_by_course_id(session: Session, course_id: int) -> List[Assignment]:
+    """Fetch assignments for a specific course"""
+    statement = select(Assignment).where(Assignment.course_id == course_id)
     return session.exec(statement).all()
 
+
+def delete_assignment_by_id(session: Session, assignment_id: int) -> bool:
+    """Delete assignment by ID"""
+    record = session.get(Assignment, assignment_id)
+    if not record:
+        return False
+    session.delete(record)
+    session.commit()
+    return True
 
 # ====== Notice Operations ======
 # ===============================
