@@ -1,9 +1,9 @@
 # ===== Import necessary libraries =====
-from sqlmodel import Session, select
+from sqlmodel import Session, select, desc
 from typing import Optional, List
 from datetime import datetime
 
-from .schemas import NoticeCreate
+from .schemas import NoticeCreate, FeesCreate, MarksCreate, CourseCreate, AssignmentCreate, AttendanceCreate
 from .models import User, Attendance, Fees, Marks, Assignment, Course, Notice
 
 # ====== User Operations =======
@@ -69,7 +69,7 @@ def get_all_attendances(session: Session) -> List[Attendance]:
 def get_attendance_by_user_id(session: Session, user_id: int) -> Optional[Attendance]:
     """Fetch attendance by user id"""
     statement = select(Attendance).where(Attendance.user_id == user_id)
-    return session.exec(statement).first()
+    return session.exec(statement).all()
 
 # ===== get attendance by id =====
 def get_attendance_by_id(session: Session, attendance_id: int) -> Optional[Attendance]:
@@ -93,12 +93,12 @@ def delete_attendance_by_user_id(session: Session, user_id: int) -> int:
     records = session.exec(statement).all()
 
     if not records:
-        return 0
+        return False
 
     for record in records:
         session.delete(record)
     session.commit()
-    return len(records)
+    return True
 
 # ===== Fees Operations =====
 # ===========================
@@ -108,7 +108,6 @@ def create_fees(session: Session, fees: Fees) -> Fees:
     session.commit()
     session.refresh(fees)
     return fees
-
 
 def update_fees(session: Session, fees_id: int, data: FeesCreate) -> Optional[Fees]:
     """Update a fee record"""
@@ -130,17 +129,14 @@ def get_all_fees(session: Session) -> List[Fees]:
     statement = select(Fees)
     return session.exec(statement).all()
 
-
 def get_fees_by_id(session: Session, fees_id: int) -> Optional[Fees]:
     """Fetch fee record by ID"""
     return session.get(Fees, fees_id)
 
-
-def get_user_fees(session: Session, user_id: str) -> List[Fees]:
-    """Get all fee records for a user"""
+def get_fees_by_user_id(session: Session, user_id: int) -> Optional[Fees]:
+    """Fetch attendance by user id"""
     statement = select(Fees).where(Fees.user_id == user_id)
-    return session.exec(statement).all()
-
+    return session.exec(statement).first()
 
 def delete_fees_by_id(session: Session, fees_id: int) -> bool:
     """Delete fee record by ID"""
@@ -157,11 +153,12 @@ def delete_fees_by_user_id(session: Session, user_id: int) -> int:
     statement = select(Fees).where(Fees.user_id == user_id)
     records = session.exec(statement).all()
     if not records:
-        return 0
+        return False
+    
     for r in records:
         session.delete(r)
     session.commit()
-    return len(records)
+    return True
 
 
 # ===== Marks Operations =====
@@ -229,7 +226,6 @@ def create_course_records(session: Session, course: Course) -> Course:
     session.refresh(course)
     return course
 
-
 def update_course(session: Session, course_id: int, data: CourseCreate) -> Optional[Course]:
     """Update course record"""
     record = session.get(Course, course_id)
@@ -245,17 +241,14 @@ def update_course(session: Session, course_id: int, data: CourseCreate) -> Optio
     session.refresh(record)
     return record
 
-
 def get_all_courses(session: Session) -> List[Course]:
     """Get all courses"""
     statement = select(Course)
     return session.exec(statement).all()
 
-
 def get_course_by_id(session: Session, course_id: int) -> Optional[Course]:
     """Fetch course by ID"""
     return session.get(Course, course_id)
-
 
 def delete_course_by_id(session: Session, course_id: int) -> bool:
     """Delete course by ID"""
@@ -302,6 +295,29 @@ def get_all_assignments(session: Session) -> List[Assignment]:
 def get_assignment_by_id(session: Session, assignment_id: int) -> Optional[Assignment]:
     """Fetch assignment by ID"""
     return session.get(Assignment, assignment_id)
+
+def get_recent_assignment_per_course(session: Session) -> List[Assignment]:
+
+    # step 1: Get all distinct course_ids
+    course_ids = session.exec(select(Course.id)).all()
+    recent_assignments = []
+
+    # step 2: for each course, fetch its most recent assignment 
+    for course_id in course_ids:
+        statement = (
+            select(Assignment)
+            .where(Assignment.course_id == course_id)
+            .order_by(desc(Assignment.created_at))
+            .limit(1)
+        )
+
+    latest_assignment = session.exec(statement).first()
+    if latest_assignment:
+        recent_assignments.append(latest_assignment)
+
+    # Step 3: Optionally sort the final list by created_at (newest first)
+    recent_assignments.sort(key=lambda a: a.created_at, reverse=True)
+    return recent_assignments
 
 
 def get_assignment_by_course_id(session: Session, course_id: int) -> List[Assignment]:

@@ -1,7 +1,7 @@
 from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse, NoticeResponse, NoticeCreate
 from .database import SessionDep, create_all_db_tables
 from .models import User, Attendance, Fees, Marks, Course, Notice, Assignment
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user,  get_user_attendance, get_user_fees, get_user_marks, create_course_records, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice
+from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user_by_id, create_course_records, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice, get_attendance_by_user_id, update_assignment, delete_assignment_by_id, get_assignment_by_course_id, get_assignment_by_id, get_recent_assignment_per_course, get_marks_by_user_id, get_fees_by_user_id, get_attendance_by_id, update_attendance, delete_attendance_by_user_id, get_all_fees, get_fees_by_id, delete_fees_by_user_id, update_fees
 from .utilities import hasher 
 from .OAuth import authenticate_user, create_access_token, get_current_user, role_required
 from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
@@ -71,7 +71,7 @@ def delete_user_by_username(username: str, session: SessionDep):
     user = get_user_by_username(session, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    delete_user(session, user.id)
+    delete_user_by_id(session, user.id)
     return {"ok": True}
 
 # ===== Give access to insert datas to teacher only ====
@@ -79,7 +79,7 @@ def delete_user_by_username(username: str, session: SessionDep):
 
 # ===== ATTENDANCE ENDPOINTS ===== # teacher, admin 
 @app.post("/api/v1/users/attendance/", response_model=AttendanceResponse)
-def mark_attendance(
+def add_attendance(
     students_username: str, 
     attendance_data: AttendanceCreate,
     session: SessionDep,
@@ -105,12 +105,44 @@ def mark_attendance(
     return create_attendance(session, attendance)
 
 # get all student attendance
+@app.get("/api/v1/users/attendance/", response_model=List[AttendanceResponse])
+def get_attendance_by_userid(session: SessionDep, user_id: int):
+    """Get all users"""
+    return get_attendance_by_user_id(session, user_id)
 
 # get attendance by id 
+@app.get("/api/v1/users/attendance/", response_model=List[AttendanceResponse])
+def get_attendance_by_id_endpoints(session: SessionDep, attendance_id: int):
+    """Get attendance by attendance id"""
+    return get_attendance_by_id(session, attendance_id)
 
-# update attendance 
+# ===== Update Attendance endpoints ======
+@app.put("/api/v1/attendance/{attendance_id}", response_model=AttendanceResponse)
+def update_attendance_endpoints(
+    attendance_id: int,
+    attendance_data: AttendanceCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Update an assignment (teacher/admin only)"""
 
-# delete attendance 
+    attendance = update_attendance(session, int(attendance_id), attendance_data)
+    if not attendance:
+        raise HTTPException(status_code=404, detail="Attendance not found")
+    return attendance
+
+# ===== delete attendance endpoints =====
+@app.delete("/api/v1/attendance/{attendance_id}")
+def delete_attendance_by_user_id_endpoints(
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Delete an attendance by id (teacher/admin only)"""
+
+    if not delete_attendance_by_user_id(session, user.id):
+        raise HTTPException(status_code=404, detail="Attendance not found")
+    return {"message": "Attendance deleted successfully"}
+
 
 # ===== FEES ENDPOINTS ======= # admin 
 @app.post("/api/v1/users/{user_id}/fee/", response_model=FeesResponse)
@@ -139,13 +171,51 @@ def add_user_fee(
 
     return create_fees(session, fees)
 
-# update fees records
+# Get all fees records
+@app.get("/api/v1/users/fees/", response_model=List[FeesResponse])
+def get_fees_endpoints(session: SessionDep):
+    """Get all users"""
+    return get_all_fees(session)
 
-# delete fees records 
+# get fees by id 
+@app.get("/api/v1/users/fees/", response_model=List[FeesResponse])
+def get_fees_by_id_endpoints(session: SessionDep, fees_id: int):
+    """Get fees by fees id"""
+    return get_fees_by_id(session, fees_id)
 
-# get all fees records
+# get fees by user id 
+@app.get("/api/v1/users/fees/", response_model=List[FeesResponse])
+def get_fees_by_user_id_endpoints(session: SessionDep, user_id: int):
+    """Get fees by user id"""
+    return get_fees_by_user_id(session, user_id)
 
-# get student fees by id 
+# ===== Update Fees endpoints ======
+@app.put("/api/v1/fees/{student_id}", response_model=AttendanceResponse)
+def update_attendance_endpoints(
+    student_id: int,
+    attendance_data: AttendanceCreate,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Update an fees (teacher/admin only)"""
+
+    fees = update_fees(session, int(student_id), attendance_data)
+    if not fees:
+        raise HTTPException(status_code=404, detail="fees not found")
+    return fees
+
+# ===== delete fees endpoints =====
+@app.delete("/api/v1/fees/{student_id}")
+def delete_fee_by_user_id_endpoints(
+    student_id: int,
+    session: SessionDep,
+    user: User = Depends(role_required(["teacher", "admin"])),
+):
+    """Delete an attendance by id (teacher/admin only)"""
+
+    if not delete_fees_by_user_id(session, student_id):
+        raise HTTPException(status_code=404, detail="fees not found")
+    return {"message": "fees deleted successfully"}
 
 # ===== MARKS ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/users/{student_username}/marks/", response_model=MarksResponse)
@@ -178,13 +248,40 @@ def add_marks_record(
 
     return create_marks(session, marks)
 
-# ===== get marks by id =====
 
-# ===== get all marks record of student ====
 
-# ===== update marks =====
+@router.get("/marks/{user_id}", response_model=List[MarksResponse])
+def get_marks_by_user(user_id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
+    records = get_marks_by_user_id(session, user_id)
+    if not records:
+        raise HTTPException(status_code=404, detail="Marks not found for user")
+    return records
 
-# ===== delete marks =====
+
+@router.put("/marks/{marks_id}", response_model=MarksResponse)
+def update_marks(marks_id: int, data: MarksCreate, session: SessionDep, current_user: User = Depends(role_required(["teacher", "admin"]))):
+    marks = session.get(Marks, marks_id)
+    if not marks:
+        raise HTTPException(status_code=404, detail="Marks not found")
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(marks, field, value)
+
+    marks.updated_at = datetime.now()
+    session.commit()
+    session.refresh(marks)
+    return marks
+
+
+@router.delete("/marks/{marks_id}", response_model=dict)
+def delete_marks(marks_id: int, session: SessionDep, current_user: User = Depends(role_required(["teacher", "admin"]))):
+    marks = session.get(Marks, marks_id)
+    if not marks:
+        raise HTTPException(status_code=404, detail="Marks not found")
+
+    session.delete(marks)
+    session.commit()
+    return {"message": "Marks deleted successfully"}
 
 # ===== COURSE ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/courses/", response_model=CourseResponse)
@@ -208,17 +305,47 @@ def create_course(
     )
     return create_course_records(session, course)
 
-# ===== update course ======
+@router.get("/course", response_model=List[CourseResponse])
+def get_all_courses(session: SessionDep):
+    return session.exec(select(Course)).all()
 
-# ===== get all course =====
 
-# ===== get course by id =====
+@router.get("/course/{course_id}", response_model=CourseResponse)
+def get_course_by_id(course_id: int, session: SessionDep):
+    record = session.get(Course, course_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return record
 
-# ===== delete course ======
+
+@router.put("/course/{course_id}", response_model=CourseResponse)
+def update_course(course_id: int, data: CourseCreate, session: SessionDep, current_user: User = Depends(role_required(["admin", "teacher"]))):
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(course, field, value)
+
+    course.updated_at = datetime.now()
+    session.commit()
+    session.refresh(course)
+    return course
+
+
+@router.delete("/course/{course_id}", response_model=dict)
+def delete_course(course_id: int, session: SessionDep, current_user: User = Depends(role_required(["admin", "teacher"]))):
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    session.delete(course)
+    session.commit()
+    return {"message": "Course deleted successfully"}
 
 # ===== ASSIGNMENT ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/courses/{course_id}/assignments/", response_model=AssignmentResponse)
-def add_assignment(
+def add_assignment_endpoints(
     course_id: int,
     assignment_data: AssignmentCreate,
     session: SessionDep,
@@ -249,7 +376,7 @@ def add_assignment(
 
 # ===== Update Assignment endpoints ======
 @app.put("/api/v1/assignments/{assignment_id}", response_model=AssignmentResponse)
-def update_assignment(
+def update_assignment_endpoints(
     assignment_id: int,
     assignment_data: AssignmentCreate,
     session: SessionDep,
@@ -257,36 +384,50 @@ def update_assignment(
 ):
     """Update an assignment (teacher/admin only)"""
 
-    assignment = update_assignment(session, assignment_id, assignment_data)
+    assignment = update_assignment(session, int(assignment_id), assignment_data)
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return assignment
 
 # ===== delete assignment endpoints =====
 @app.delete("/api/v1/assignments/{assignment_id}")
-def delete_assignment_by_id(
+def delete_assignment_by_id_endpoints(
     assignment_id: int,
     session: SessionDep,
     user: User = Depends(role_required(["teacher", "admin"])),
 ):
     """Delete an assignment by id (teacher/admin only)"""
 
-    if not delete_assignment(session, assignment_id):
+    if not delete_assignment_by_id(session, assignment_id):
         raise HTTPException(status_code=404, detail="Assignment not found")
     return {"message": "Assignment deleted successfully"}
 
-# ===== get all assignment ======
-@app.get("/api/v1/assignment/", response_model=List[AssignmentResponse])
-def get_all_recent_assignments(session: SessionDep):
-    """All users can view all notices"""
-    return get_all_course_recent_assignment(session)
+# get all courses recent assignment =====================
+@app.get("/api/v1/assignments/recent-per-course", response_model=List[AssignmentResponse])
+def get_recent_assignment_per_course_endpoint(
+    session: SessionDep,
+    user: User = Depends(role_required(["student", "teacher", "admin"])),
+):
+    """Get the most recent assignment from each course."""
+    assignments = get_recent_assignment_per_course(session)
+    if not assignments:
+        raise HTTPException(status_code=404, detail="No recent assignments found for any course")
+    return assignments
 
 # ===== get assignment by id ======
 @app.get("/api/v1/assignment/{assignment_id}", response_model=AssignmentResponse)
-def get_notice_by_id_endpoint(assignment_id: int, session: SessionDep):
+def get_assignment_by_id_endpoint(assignment_id: int, session: SessionDep):
     assignment = get_assignment_by_id(session, assignment_id)
     if not assignment:
         raise HTTPException(status_code=404, detail="assignment not found")
+    return assignment
+
+# ===== get assignment by id ======
+@app.get("/api/v1/assignment/{assignment_id}", response_model=AssignmentResponse)
+def get_assignment_by_course_id_endpoint(course_id: int, session: SessionDep):
+    assignment = get_assignment_by_course_id(session, course_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course Assignment not found")
     return assignment
 
 # ==== Auth Endpoints ==== # teacher, admin, students
@@ -333,7 +474,7 @@ def post_notice(
 # ===== all users can view the notices =======
 # ======================================================
 @app.get("/api/v1/notices/", response_model=List[NoticeResponse])
-def get_notices(session: SessionDep):
+def get_notices_endpoint(session: SessionDep):
     """All users can view all notices"""
     return get_all_notices(session)
 
@@ -381,7 +522,7 @@ async def chat(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials token")
     
-    username = user.username
+    user_id = user.user_id
     query = message.query
     
     # Classify the query
@@ -389,17 +530,17 @@ async def chat(
     
     # Route to appropriate handler
     if query_type == QueryType.ATTENDANCE:
-        attendance_records = get_user_attendance(session, username)
+        attendance_records = get_attendance_by_user_id(session, user_id)
         formatted_data = format_attendance_data(attendance_records)
         response = get_conversational_response(formatted_data, query)
         
     elif query_type == QueryType.MARKS:
-        marks_records = get_user_marks(session, username)
+        marks_records = get_marks_by_user_id(session, user_id)
         formatted_data = format_marks_data(marks_records)
         response = get_conversational_response(formatted_data, query)
         
     elif query_type == QueryType.FEES:
-        fees_records = get_user_fees(session, username)
+        fees_records = get_fees_by_user_id(session, user_id)
         formatted_data = format_fees_data(fees_records)
         response = get_conversational_response(formatted_data, query)
         
