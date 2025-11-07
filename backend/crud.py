@@ -46,13 +46,13 @@ def create_attendance(session: Session, attendance: Attendance) -> Attendance:
 # ===== update attendance =====
 def update_attendance(session: Session, attendance_id: int, data: AttendanceCreate) -> Optional[Attendance]:
     """Update a attendance"""
-    attendance = session.get(attendance, attendance_id)
+    attendance = session.get(Attendance, attendance_id)
     if not attendance:
         return None
 
     for field, value in data.dict(exclude_unset=True).items():
         setattr(attendance, field, value)
-    attendance.updated_at = datetime.now()
+    attendance.created_at = datetime.now()
 
     session.add(attendance)
     session.commit()
@@ -117,7 +117,7 @@ def update_fees(session: Session, fees_id: int, data: FeesCreate) -> Optional[Fe
 
     for field, value in data.dict(exclude_unset=True).items():
         setattr(fees_record, field, value)
-    fees_record.updated_at = datetime.now()
+    fees_record.last_payment_date = datetime.now()
 
     session.add(fees_record)
     session.commit()
@@ -147,7 +147,6 @@ def delete_fees_by_id(session: Session, fees_id: int) -> bool:
     session.commit()
     return True
 
-
 def delete_fees_by_user_id(session: Session, user_id: int) -> int:
     """Delete all fee records for a user"""
     statement = select(Fees).where(Fees.user_id == user_id)
@@ -159,7 +158,6 @@ def delete_fees_by_user_id(session: Session, user_id: int) -> int:
         session.delete(r)
     session.commit()
     return True
-
 
 # ===== Marks Operations =====
 def create_marks(session: Session, marks: Marks) -> Marks:
@@ -177,7 +175,7 @@ def update_marks(session: Session, marks_id: int, data: MarksCreate) -> Optional
 
     for field, value in data.dict(exclude_unset=True).items():
         setattr(record, field, value)
-    record.updated_at = datetime.now()
+    record.created_at = datetime.now()
 
     session.add(record)
     session.commit()
@@ -212,11 +210,11 @@ def delete_marks_by_user_id(session: Session, user_id: int) -> int:
     statement = select(Marks).where(Marks.user_id == user_id)
     records = session.exec(statement).all()
     if not records:
-        return 0
+        return False
     for r in records:
         session.delete(r)
     session.commit()
-    return len(records)
+    return True
 
 # ===== Course Operations =====
 def create_course_records(session: Session, course: Course) -> Course:
@@ -226,20 +224,22 @@ def create_course_records(session: Session, course: Course) -> Course:
     session.refresh(course)
     return course
 
-def update_course(session: Session, course_id: int, data: CourseCreate) -> Optional[Course]:
+def update_course(session: Session, user_id: int, data: CourseCreate) -> Optional[Course]:
     """Update course record"""
-    record = session.get(Course, course_id)
-    if not record:
+    statement = select(Course).where(Course.teacher_id == user_id)
+    records = session.exec(statement).all()
+
+    if not records:
         return None
 
     for field, value in data.dict(exclude_unset=True).items():
-        setattr(record, field, value)
-    record.updated_at = datetime.now()
+        setattr(records, field, value)
+    records.updated_at = datetime.now()
 
-    session.add(record)
+    session.add(records)
     session.commit()
-    session.refresh(record)
-    return record
+    session.refresh(records)
+    return records
 
 def get_all_courses(session: Session) -> List[Course]:
     """Get all courses"""
@@ -259,6 +259,21 @@ def delete_course_by_id(session: Session, course_id: int) -> bool:
     session.commit()
     return True
 
+def get_course_by_user_id(session: Session, user_id: int) -> List[Course]:
+    """Fetch all course for a user"""
+    statement = select(Course).where(Course.teacher_id == user_id)
+    return session.exec(statement).all()
+
+def delete_course(session: Session, user_id: int) -> bool :
+    """Delete all courses from a teacher"""
+    statement = select(Course).where(Course.teacher_id == user_id)
+    records = session.exec(statement).all()
+    if not records:
+        return False
+    for r in records:
+        session.delete(r)
+    session.commit()
+    return True
 
 # ==== create assignments records
 # ===== Assignment Operations =====
@@ -268,7 +283,6 @@ def create_assignment_records(session: Session, assignment: Assignment) -> Assig
     session.commit()
     session.refresh(assignment)
     return assignment
-
 
 def update_assignment(session: Session, assignment_id: int, data: AssignmentCreate) -> Optional[Assignment]:
     """Update assignment"""

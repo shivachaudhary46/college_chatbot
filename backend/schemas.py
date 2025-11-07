@@ -111,7 +111,7 @@ class MarksCreate(BaseModel):
 
 class MarksResponse(BaseModel):
     id: int
-    user_id: str
+    user_id: int
     semester: str
     subject: str
     total_marks: int
