@@ -1,10 +1,10 @@
 from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse, NoticeResponse, NoticeCreate
 from .database import SessionDep, create_all_db_tables
 from .models import User, Attendance, Fees, Marks, Course, Notice, Assignment
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user_by_id, create_course_records, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice, get_attendance_by_user_id, update_assignment, delete_assignment_by_id, get_assignment_by_course_id, get_assignment_by_id, get_recent_assignment_per_course, get_marks_by_user_id, get_fees_by_user_id, get_attendance_by_id, update_attendance, delete_attendance_by_user_id, get_all_fees, get_fees_by_id, delete_fees_by_user_id, update_fees, get_all_marks, get_marks_by_id, get_marks_by_user_id, update_marks, delete_marks_by_user_id, get_all_courses, get_course_by_id, update_course, get_course_by_user_id, delete_course
+from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user_by_id, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice, get_attendance_by_user_id, update_assignment, delete_assignment_by_id, get_assignment_by_course_id, get_assignment_by_id, get_recent_assignment_per_course, get_marks_by_user_id, get_fees_by_user_id, get_attendance_by_id, update_attendance, delete_attendance_by_user_id, get_all_fees, get_fees_by_id, delete_fees_by_user_id, update_fees, get_all_marks, get_marks_by_id, get_marks_by_user_id, update_marks, delete_marks_by_user_id, get_all_courses, get_course_by_id, update_course,  delete_course, create_course, enroll_student_to_course, unenroll_student_from_course, get_courses_for_student, get_students_from_course, get_user_by_user_id, get_recent_notices
 from .utilities import hasher 
 from .OAuth import authenticate_user, create_access_token, get_current_user, role_required
-from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response
+from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response, format_course_data, format_assignment_data, format_user_data, format_notice_data
 
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import FastAPI, HTTPException, Query, Depends
@@ -291,7 +291,7 @@ def delete_mark_by_user_id_endpoints(
 
 # ===== COURSE ENDPOINTS ====== # teacher, admin
 @app.post("/api/v1/courses/", response_model=CourseResponse)
-def create_course(
+def create_course_endpoints(
     course_data: CourseCreate,
     session: SessionDep,
     user: User = Depends(role_required(["teacher", "admin"])),
@@ -301,57 +301,68 @@ def create_course(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials token")
 
-    # Teachers can only create their own courses
-    teacher_id = user.id if user.role == "teacher" else course_data.teacher_id
-
-    course = Course(
-        name=course_data.name,
-        code=course_data.code,
-        teacher_id=teacher_id,
-    )
-    return create_course_records(session, course)
+    return create_course(session, user, course_data)
 
 # Get all course records
 @app.get("/api/v1/users/courses/", response_model=List[CourseResponse])
-def get_course_endpoints(session: SessionDep):
-    """Get all marks from users"""
+def get_all_course_endpoints(session: SessionDep):
+    """Get all course in course database"""
     return get_all_courses(session)
 
-# get courses by id 
-@app.get("/api/v1/users/courses/", response_model=List[CourseResponse])
+# get courses by course_id  
+@app.get("/api/v1/courses/{course_id}", response_model=List[CourseResponse])
 def get_course_by_id_endpoints(session: SessionDep, course_id: int):
     """Get course by course_id"""
     return get_course_by_id(session, course_id)
 
 # get courses by user id 
-@app.get("/api/v1/users/courses/", response_model=List[CourseResponse])
+@app.get("/api/v1/students/{students_id}/courses", response_model=List[CourseResponse])
 def get_course_by_user_id_endpoints(session: SessionDep, user_id: int):
     """Get courses by user id"""
-    return get_course_by_user_id(session, user_id)
+    return get_courses_for_student(session, user_id)
+
+# get student by course id 
+@app.get("/api/v1/courses/{course_id}/students", response_model=List[CourseResponse])
+def get_course_by_course_id_endpoints(session: SessionDep, course_id: int):
+    """Get courses by course_id"""
+    return get_students_from_course(session, course_id)
+
+@app.post("/api/v1/students/enroll/", response_model=dict[str, str])
+def enroll_student(session: SessionDep, course_id: int, student_id: int, user: User = Depends(role_required(["teacher", "admin"]))):
+    
+    return enroll_student_to_course(session, course_id, student_id, user)
+
+@app.delete("/api/v1/students/unenroll/", response_model=dict[str, str])
+def unenroll_student(session: SessionDep, course_id: int, student_id: int, user: User = Depends(role_required(["teacher", "admin"]))):
+    
+    return unenroll_student_from_course(session, course_id, student_id, user)
 
 # ===== Update course endpoints ======
-@app.put("/api/v1/courses/", response_model=CourseResponse)
+@app.put("/api/v1/update_course/", response_model=CourseResponse)
 def update_course_endpoints(
     course_data: CourseCreate,
     session: SessionDep,
+    course_id: int, 
     user: User = Depends(role_required(["teacher", "admin"])),
 ):
     """Update an course (teacher/admin only)"""
 
-    courses = update_course(session, int(user.id), course_data)
+    courses = update_course(session, course_id, user, course_data)
+
     if not courses:
         raise HTTPException(status_code=404, detail="courses not found")
     return courses
 
 # ===== delete course endpoints =====
-@app.delete("/api/v1/courses/")
-def delete_course_by_user_id_endpoints(
+@app.delete("/api/v1/delete_course/")
+def delete_course_by_course_id_endpoints(
     session: SessionDep,
+    course_id: int, 
     user: User = Depends(role_required(["teacher", "admin"])),
 ):
     """Delete an course by id (teacher/admin only)"""
 
-    if not delete_course(session, user.id):
+    if not delete_course(session, course_id, user):
         raise HTTPException(status_code=404, detail="course not found")
     return {"message": "course deleted successfully"}
 
@@ -535,7 +546,7 @@ async def chat(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials token")
     
-    user_id = user.user_id
+    user_id = user.id
     query = message.query
     
     # Classify the query
@@ -559,7 +570,27 @@ async def chat(
         
     elif query_type == QueryType.COLLEGE_INFO:
         response = get_college_info_response(query)
-        
+    
+    elif query_type == QueryType.COURSE:
+        user_course_records =  get_courses_for_student(session, user_id)
+        formatted_data = format_course_data(user_course_records)
+        response = get_conversational_response(formatted_data, query)
+
+    elif query_type == QueryType.ASSIGNMENT:
+        assignment_records = get_recent_assignment_per_course(session)
+        formatted_data = format_assignment_data(fees_records)
+        response = get_conversational_response(formatted_data, query)
+    
+    elif query_type == QueryType.USER_INFO:
+        user_records = get_user_by_user_id(session, user_id)
+        formatted_data = format_user_data(user_records)
+        response = get_conversational_response(formatted_data, query)
+    
+    elif query_type == QueryType.NOTICES:
+        notice_records = get_recent_notices(session)
+        formatted_data = format_notice_data(notice_records)
+        response = get_conversational_response(formatted_data, query)
+    
     else:  # GENERAL
         response = get_general_search_response(query)
     

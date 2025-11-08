@@ -14,6 +14,8 @@ from langchain.chains import LLMChain
 from langchain import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 
+from transformers import pipeline 
+
 from .schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
 
@@ -22,21 +24,30 @@ genai_key = os.environ.get("GOOGLE_API_KEY")
 # =============== Query Classification ==================
 def classify_query(query: str) -> QueryType:
     """Classify the user query into appropriate categories"""
-    query_lower = query.lower()
+    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
     
-    attendance_keywords = ["attendance", "present", "absent", "class", "lectures", "session"]
-    marks_keywords = ["marks", "score", "result", "grade", "exam", "test", "performance"]
-    fees_keywords = ["fees", "payment", "tuition", "dues", "billing", "amount due"]
-    college_keywords = ["college", "course", "program", "announcement", "admission", "faculty", "campus"]
+    candidate_labels = ["attendance", "fees", "marks", "course", "assignment", "college_info", "user_info", "general", "notices"]
+
+    result = classifier(query, candidate_labels)
     
-    if any(keyword in query_lower for keyword in attendance_keywords):
+    top_label = result["labels"][0]
+    
+    if top_label == "attendance":
         return QueryType.ATTENDANCE
-    elif any(keyword in query_lower for keyword in marks_keywords):
+    elif top_label == "marks":
         return QueryType.MARKS
-    elif any(keyword in query_lower for keyword in fees_keywords):
+    elif top_label == "fees":
         return QueryType.FEES
-    elif any(keyword in query_lower for keyword in college_keywords):
+    elif top_label == "college_info":
         return QueryType.COLLEGE_INFO
+    elif top_label == "course":
+        return QueryType.COURSE
+    elif top_label == "assignment":
+        return QueryType.ASSIGNMENT
+    elif top_label == "user_info":
+        return QueryType.USER_INFO
+    elif top_label == "notices":
+        return QueryType.NOTICES
     else:
         return QueryType.GENERAL
 
@@ -69,6 +80,69 @@ def format_marks_data(marks_records: list) -> str:
     formatted = "Your Marks:\n"
     for record in marks_records:
         formatted += f"- {record.subject} ({record.semester}): {record.total_marks}/100 - Grade: {record.grade} ({record.status})\n"
+    return formatted
+
+def format_course_data(course_records: list) -> str:
+    """Format course records into readable text"""
+    if not course_records:
+        return "No course records found."
+    
+    formatted = "Your Enrolled Courses:\n"
+    for record in course_records:
+        formatted += f"- {record.name} (Code: {record.code})\n"
+        if hasattr(record, 'teacher_id') and record.teacher_id:
+            formatted += f"  Teacher ID: {record.teacher_id}\n"
+    return formatted
+
+def format_assignment_data(assignment_records: list) -> str:
+    """Format assignment records into readable text"""
+    if not assignment_records:
+        return "No assignment records found."
+    
+    formatted = "Recent Assignments:\n"
+    for record in assignment_records:
+        formatted += f"- {record.title}\n"
+        formatted += f"  Course ID: {record.course_id}\n"
+        formatted += f"  Description: {record.description}\n"
+        formatted += f"  Due Date: {record.due_date.strftime('%Y-%m-%d %H:%M')}\n"
+        formatted += f"  Assigned by: User ID {record.teacher_id}\n\n"
+    return formatted
+
+def format_user_data(user_record) -> str:
+    """Format user record into readable text"""
+    if not user_record:
+        return "No user information found."
+    
+    formatted = "Your Profile Information:\n"
+    formatted += f"- Full Name: {user_record.full_name}\n"
+    formatted += f"- Username: {user_record.username}\n"
+    formatted += f"- Email: {user_record.email}\n"
+    formatted += f"- Batch: {user_record.batch}\n"
+    formatted += f"- Program: {user_record.program}\n"
+    formatted += f"- Role: {user_record.role}\n"
+    formatted += f"- Account Status: {'Disabled' if user_record.disabled else 'Active'}\n"
+    formatted += f"- Member Since: {user_record.created_at.strftime('%Y-%m-%d')}\n"
+    return formatted
+
+def format_notice_data(notice_records: list) -> str:
+    """Format notice records into readable text"""
+    if not notice_records:
+        return "No notices found."
+    
+    formatted = "Recent Notices:\n"
+    for record in notice_records:
+        formatted += f"\n📢 {record.title}\n"
+        formatted += f"   {record.content}\n"
+        if record.target_batch:
+            formatted += f"   Target Batch: {record.target_batch}\n"
+        if record.target_program:
+            formatted += f"   Target Program: {record.target_program}\n"
+        if record.course_id:
+            formatted += f"   Course ID: {record.course_id}\n"
+        if record.created_by:
+            formatted += f"   Created By: {record.created_by}\n"
+        formatted += f"   Posted: {record.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+        formatted += "   " + "-"*50 + "\n"
     return formatted
 
 # =============== LLM Response Generators ==================

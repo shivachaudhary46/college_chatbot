@@ -54,126 +54,21 @@
 #         response = asyncio.run(chat(request, session))
 #         print(response)
 
-from fastapi import HTTPException
-from sqlmodel import select, Session
+from transformers import pipeline 
 
-from app.models import Course, UserCourseLink, User
-from app.schemas import CourseCreate, CourseResponse
+classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
-
-# =============================#
-# COURSE SERVICE FUNCTIONS by ( TEACHER / ADMIN)
-# =============================#
-
-def create_course(session: Session, user: User, course_data: CourseCreate):
-    """Teacher/Admin create course"""
-    teacher_id = user.id if user.role == "teacher" else course_data.teacher_id
-
-    course = Course(
-        name=course_data.name,
-        code=course_data.code,
-        teacher_id=teacher_id,
-    )
-    session.add(course)
-    session.commit()
-    session.refresh(course)
-    return course
+query = "I was present yesterday but i was absent today ? did i pass my attendance optimum 70 % ?"
 
 
-def update_course(session: Session, course_id: int, user: User, course_data: CourseCreate):
-    """Teacher/Admin update course"""
+def classify_text(query):
+    candidate_labels = ["attendance", "fees", "marks", "course", "assignment", "college", "user_info", "general"]
+    result = classifier(query, candidate_labels=candidate_labels)
+    
+    # Get the label with highest score (first item in the result)
+    top_label = result["labels"][0]
+    top_score = result["scores"][0]
+    
+    return top_label
 
-    course = session.get(Course, course_id)
-    if not course:
-        raise HTTPException(404, "Course not found")
-
-    if user.role == "teacher" and course.teacher_id != user.id:
-        raise HTTPException(403, "You are not authorized to modify this course")
-
-    course.name = course_data.name
-    course.code = course_data.code
-
-    session.add(course)
-    session.commit()
-    session.refresh(course)
-    return course
-
-
-def delete_course(session: Session, course_id: int, user: User):
-    """Teacher/Admin delete course"""
-
-    course = session.get(Course, course_id)
-    if not course:
-        raise HTTPException(404, "Course not found")
-
-    if user.role == "teacher" and course.teacher_id != user.id:
-        raise HTTPException(403, "You are not authorized to delete this course")
-
-    session.delete(course)
-    session.commit()
-    return {"message": "Course deleted successfully"}
-
-
-def get_all_courses(session: Session):
-    return session.exec(select(Course)).all()
-
-
-def get_course_by_id(session: Session, course_id: int):
-    course = session.get(Course, course_id)
-    if not course:
-        raise HTTPException(404, "Course not found")
-    return course
-
-
-# =============================#
-# STUDENT VIEW COURSES
-# =============================#
-
-def get_courses_for_student(session: Session, user_id: int):
-    enrollments = session.exec(
-        select(Course).join(UserCourseLink).where(UserCourseLink.user_id == user_id)
-    ).all()
-    return enrollments
-
-
-# =============================#
-# ENROLLMENT SERVICE
-# =============================#
-
-def enroll_student_to_course(session: Session, course_id: int, student_id: int, user: User):
-    """Teacher/Admin enroll student to course"""
-
-    student = session.get(User, student_id)
-    if not student or student.role != "student":
-        raise HTTPException(404, "Student not found")
-
-    existing = session.get(UserCourseLink, (student_id, course_id))
-    if existing:
-        raise HTTPException(400, "Student already enrolled")
-
-    link = UserCourseLink(user_id=student_id, course_id=course_id)
-    session.add(link)
-    session.commit()
-    return {"message": "Student enrolled successfully"}
-
-
-def unenroll_student_from_course(session: Session, course_id: int, student_id: int, user: User):
-    """Remove student from course"""
-
-    existing = session.get(UserCourseLink, (student_id, course_id))
-    if not existing:
-        raise HTTPException(404, "Student not enrolled in this course")
-
-    session.delete(existing)
-    session.commit()
-    return {"message": "Student unenrolled successfully"}
-
-
-def get_students_in_course(session: Session, course_id: int):
-    """Return list of students enrolled into course"""
-
-    students = session.exec(
-        select(User).join(UserCourseLink).where(UserCourseLink.course_id == course_id)
-    ).all()
-
-    return students
+print(classify_text(query))

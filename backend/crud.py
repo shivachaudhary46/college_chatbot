@@ -2,9 +2,10 @@
 from sqlmodel import Session, select, desc
 from typing import Optional, List
 from datetime import datetime
+from fastapi import HTTPException 
 
-from .schemas import NoticeCreate, FeesCreate, MarksCreate, CourseCreate, AssignmentCreate, AttendanceCreate
-from .models import User, Attendance, Fees, Marks, Assignment, Course, Notice
+from .schemas import NoticeCreate, FeesCreate, MarksCreate, CourseCreate, AssignmentCreate, AttendanceCreate, UserResponse
+from .models import User, Attendance, Fees, Marks, Assignment, Course, Notice, UserCourseLink
 
 # ====== User Operations =======
 # ==============================
@@ -12,6 +13,10 @@ def get_user_by_username(session: Session, username: str) -> Optional[User]:
     """Fetch user by username"""
     statement = select(User).where(User.username == username)
     return session.exec(statement).first()
+
+def get_user_by_user_id(session: Session, id: str) -> Optional[UserResponse]: 
+    statement = session.get(User, id)
+    return statement
 
 def create_user(session: Session, user: User) -> User:
     """Create new user"""
@@ -25,9 +30,9 @@ def get_all_users(session: Session, skip: int = 0, limit: int = 100) -> List[Use
     statement = select(User).offset(skip).limit(limit)
     return session.exec(statement).all()
 
-def delete_user_by_id(session: Session, user_id: int) -> bool:
+def delete_user_by_id(session: Session, id: int) -> bool:
     """Delete user by ID"""
-    user = session.get(User, user_id)
+    user = session.get(User, id)
     if user:
         session.delete(user)
         session.commit()
@@ -216,64 +221,122 @@ def delete_marks_by_user_id(session: Session, user_id: int) -> int:
     session.commit()
     return True
 
-# ===== Course Operations =====
-def create_course_records(session: Session, course: Course) -> Course:
-    """Create a new course record"""
+# =============================#
+# COURSE SERVICE FUNCTIONS by ( TEACHER / ADMIN)
+# =============================#
+
+def create_course(session: Session, user: User, course_data: CourseCreate):
+    """Teacher/Admin create course"""
+    teacher_id = user.id if user.role == "teacher" else course_data.teacher_id
+
+    course = Course(
+        name=course_data.name,
+        code=course_data.code,
+        teacher_id=teacher_id,
+    )
     session.add(course)
     session.commit()
     session.refresh(course)
     return course
 
-def update_course(session: Session, user_id: int, data: CourseCreate) -> Optional[Course]:
-    """Update course record"""
-    statement = select(Course).where(Course.teacher_id == user_id)
-    records = session.exec(statement).all()
 
-    if not records:
-        return None
+def update_course(session: Session, course_id: int, user: User, course_data: CourseCreate):
+    """Teacher/Admin update course"""
 
-    for field, value in data.dict(exclude_unset=True).items():
-        setattr(records, field, value)
-    records.updated_at = datetime.now()
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(404, "Course not found")
 
-    session.add(records)
+    if user.role == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(403, "You are not authorized to modify this course")
+
+    course.name = course_data.name
+    course.code = course_data.code
+
+    session.add(course)
     session.commit()
-    session.refresh(records)
-    return records
+    session.refresh(course)
+    return course
 
-def get_all_courses(session: Session) -> List[Course]:
-    """Get all courses"""
-    statement = select(Course)
-    return session.exec(statement).all()
 
-def get_course_by_id(session: Session, course_id: int) -> Optional[Course]:
-    """Fetch course by ID"""
-    return session.get(Course, course_id)
+def delete_course(session: Session, course_id: int, user: User):
+    """Teacher/Admin delete course"""
 
-def delete_course_by_id(session: Session, course_id: int) -> bool:
-    """Delete course by ID"""
-    record = session.get(Course, course_id)
-    if not record:
-        return False
-    session.delete(record)
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(404, "Course not found")
+
+    if user.role == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(403, "You are not authorized to delete this course")
+
+    session.delete(course)
     session.commit()
-    return True
+    return {"message": "Course deleted successfully"}
 
-def get_course_by_user_id(session: Session, user_id: int) -> List[Course]:
-    """Fetch all course for a user"""
-    statement = select(Course).where(Course.teacher_id == user_id)
-    return session.exec(statement).all()
 
-def delete_course(session: Session, user_id: int) -> bool :
-    """Delete all courses from a teacher"""
-    statement = select(Course).where(Course.teacher_id == user_id)
-    records = session.exec(statement).all()
-    if not records:
-        return False
-    for r in records:
-        session.delete(r)
+def get_all_courses(session: Session):
+    return session.exec(select(Course)).all()
+
+
+def get_course_by_id(session: Session, course_id: int):
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(404, "Course not found")
+    return course
+
+
+# =============================#
+# STUDENT VIEW COURSES
+# =============================#
+
+def get_courses_for_student(session: Session, user_id: int):
+    enrollments = session.exec(
+        select(Course).join(UserCourseLink).where(UserCourseLink.user_id == user_id)
+    ).all()
+    return enrollments
+
+
+# =============================#
+# ENROLLMENT SERVICE
+# =============================#
+
+def enroll_student_to_course(session: Session, course_id: int, student_id: int, user: User):
+    """Teacher/Admin enroll student to course"""
+
+    student = session.get(User, student_id) # student_id = user.id
+    if not student or student.role != "student":
+        raise HTTPException(404, "Student not found")
+
+    existing = session.get(UserCourseLink, (student_id, course_id))
+    if existing:
+        raise HTTPException(400, "Student already enrolled")
+
+    link = UserCourseLink(user_id=student_id, course_id=course_id)
+    session.add(link)
     session.commit()
-    return True
+    return {"message": "Student enrolled successfully"}
+
+
+def unenroll_student_from_course(session: Session, course_id: int, student_id: int, user: User):
+    """Remove student from course"""
+
+    existing = session.get(UserCourseLink, (student_id, course_id))
+    if not existing:
+        raise HTTPException(404, "Student not enrolled in this course")
+
+    session.delete(existing)
+    session.commit()
+    return {"message": "Student unenrolled successfully"}
+
+
+def get_students_from_course(session: Session, course_id: int):
+    """Return list of students enrolled into course"""
+
+    students = session.exec(
+        select(User).join(UserCourseLink).where(UserCourseLink.course_id == course_id)
+    ).all()
+
+    return students
 
 # ==== create assignments records
 # ===== Assignment Operations =====
@@ -383,6 +446,11 @@ def update_notice(session: Session, notice_id: int, data: NoticeCreate) -> Optio
     session.commit()
     session.refresh(notice)
     return notice
+
+def get_recent_notices(session: Session, limit: int = 3) -> List[Notice]:
+    """Get recent notices (default: top 3)"""
+    statement = select(Notice).order_by(Notice.created_at.desc()).limit(limit)
+    return session.exec(statement).all()
 
 def delete_notice(session: Session, notice_id: int) -> bool:
     """Delete a notice"""

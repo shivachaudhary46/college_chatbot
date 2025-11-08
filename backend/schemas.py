@@ -130,6 +130,10 @@ class QueryType(str, Enum):
     FEES = "fees"
     COLLEGE_INFO = "college_info"
     GENERAL = "general"
+    ASSIGNMENT = "assignment"
+    COURSE = "course"
+    USER_INFO = "user_info"
+    NOTICES = "notices"
 
 class ChatMessage(BaseModel):
     query: str
