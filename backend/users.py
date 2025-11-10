@@ -1,10 +1,50 @@
-from .schemas import UserCreate, UserResponse, AttendanceCreate, AttendanceResponse, FeesCreate, FeesResponse, MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, QueryType, CourseResponse, CourseCreate, AssignmentCreate, AssignmentResponse, NoticeResponse, NoticeCreate
+from .schemas import (UserCreate, UserResponse, AttendanceCreate, 
+                    AttendanceResponse, FeesCreate, FeesResponse,
+                    MarksResponse, MarksCreate, Token, ChatMessage, ChatResponse, 
+                    QueryType, CourseResponse, CourseCreate, AssignmentCreate, 
+                    AssignmentResponse, NoticeResponse, NoticeCreate
+                    )
 from .database import SessionDep, create_all_db_tables
 from .models import User, Attendance, Fees, Marks, Course, Notice, Assignment
-from .crud import get_user_by_username, create_user, create_attendance, create_fees, create_marks, get_all_users, delete_user_by_id, create_assignment_records, create_notice_records, get_all_notices, get_notice_by_id, update_notice, delete_notice, get_attendance_by_user_id, update_assignment, delete_assignment_by_id, get_assignment_by_course_id, get_assignment_by_id, get_recent_assignment_per_course, get_marks_by_user_id, get_fees_by_user_id, get_attendance_by_id, update_attendance, delete_attendance_by_user_id, get_all_fees, get_fees_by_id, delete_fees_by_user_id, update_fees, get_all_marks, get_marks_by_id, get_marks_by_user_id, update_marks, delete_marks_by_user_id, get_all_courses, get_course_by_id, update_course,  delete_course, create_course, enroll_student_to_course, unenroll_student_from_course, get_courses_for_student, get_students_from_course, get_user_by_user_id, get_recent_notices
+from .crud import (
+    # user info 
+    get_user_by_username, create_user, get_all_users, delete_user_by_id,
+    get_user_by_user_id,
+    
+    # attendance info
+    create_attendance, get_attendance_by_user_id, update_attendance, 
+    delete_attendance_by_user_id, get_attendance_by_id, 
+    
+    # fees info
+    create_fees, get_fees_by_user_id, get_all_fees, 
+    get_fees_by_id, delete_fees_by_user_id, update_fees,
+    
+    # marks info
+    create_marks, get_marks_by_user_id, get_all_marks, 
+    get_marks_by_id, get_marks_by_user_id, update_marks, delete_marks_by_user_id, 
+    
+    # assignment info 
+    create_assignment_records,  delete_assignment_by_id, 
+    get_assignment_by_course_id, get_assignment_by_id, update_assignment, 
+    get_recent_assignment_per_course,
+
+    # notice info 
+    create_notice_records, get_all_notices, get_notice_by_id, update_notice, 
+    delete_notice, get_recent_notices,
+    
+    # course info 
+    get_all_courses, get_course_by_id, update_course,  delete_course, create_course, 
+    enroll_student_to_course, unenroll_student_from_course, get_courses_for_student, 
+    get_students_from_course,  
+)
 from .utilities import hasher 
 from .OAuth import authenticate_user, create_access_token, get_current_user, role_required
-from .chatbot import classify_query, format_attendance_data, format_fees_data, format_marks_data, get_conversational_response, get_college_info_response, get_general_search_response, format_course_data, format_assignment_data, format_user_data, format_notice_data
+from .chatbot import ( 
+    classify_query, format_attendance_data, format_fees_data, 
+    format_marks_data, get_conversational_response, get_college_info_response, 
+    get_general_search_response, format_course_data, format_assignment_data, 
+    format_user_data, format_notice_data 
+)
 
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import FastAPI, HTTPException, Query, Depends

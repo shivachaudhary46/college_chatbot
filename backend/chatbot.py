@@ -13,11 +13,22 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
 from langchain import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from transformers import pipeline 
 
 from .schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
+import asyncio 
+
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
+from datetime import datetime
+
+from langchain.schema import Document
+from langchain_pinecone import PineconeVectorStore
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from pinecone import Pinecone, ServerlessSpec
+
 
 genai_key = os.environ.get("GOOGLE_API_KEY")
 
@@ -233,3 +244,137 @@ Please provide a helpful and friendly response."""
     response = chain.run({"query": query, "search_results": search_results})
     
     return response.strip()
+
+async def crawl_college_website():
+    """Crawl MBMC college website and return documents"""
+    urls = [
+        "https://www.mbmc.edu.np/about-us",
+        "https://www.mbmc.edu.np/publications",
+        "https://www.mbmc.edu.np/course",
+        "https://www.mbmc.edu.np/events",
+        "https://www.mbmc.edu.np/gallery"
+    ]
+    
+    run_conf = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=True)
+    documents = []
+
+    print("Starting to crawl college website...")
+    async with AsyncWebCrawler() as crawler:
+        async for result in await crawler.arun_many(urls, config=run_conf):
+            if result.success:
+                print(f"✓ Successfully crawled: {result.url}")
+                
+                # Create a LangChain Document with metadata
+                doc = Document(
+                    page_content=result.markdown.raw_markdown,
+                    metadata={
+                        "source": result.url,
+                        "page": result.url.split('/')[-1],
+                        "last_updated": datetime.now().isoformat()
+                    }
+                )
+                documents.append(doc)
+            else:
+                print(f"✗ Error crawling {result.url}: {result.error_message}")
+    
+    print(f"\n✓ Total pages crawled: {len(documents)}")
+    return documents
+
+# ======= Chunk documents into smaller size ======
+def chunk_documents(documents, chunk_size=512, chunk_overlap=50):
+    """Split documents into chunks"""
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, 
+        chunk_overlap=chunk_overlap
+    )
+    chunks = text_splitter.split_documents(documents)
+    print(f"✓ Created {len(chunks)} chunks")
+    return chunks
+
+# ====== Get Create index =========
+def get_or_create_index(index_name):
+    """Get existing index or create new one"""
+    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+    
+    existing_indexes = [idx.name for idx in pc.list_indexes()]
+    
+    if index_name not in existing_indexes:
+        print(f"Creating new index: {index_name}")
+        pc.create_index(
+            name=index_name,
+            dimension=768,  # text-embedding-004 dimension
+            metric='cosine',
+            spec=ServerlessSpec(
+                cloud='aws',
+                region='us-east-1'
+            )
+        )
+        print(f"✓ Index '{index_name}' created")
+    else:
+        print(f"✓ Using existing index: {index_name}")
+    
+    return pc.Index(index_name)
+
+# ====== delete old vectors for page ======
+def delete_old_vectors_for_page(index_name, page_name):
+    """Delete old vectors for a specific page before adding new ones"""
+    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+    index = pc.Index(index_name)
+    
+    try:
+        # Query to find all vectors with this page metadata
+        # Note: This requires metadata filtering support in Pinecone
+        print(f"  Checking for existing vectors for page: {page_name}")
+        
+        # Delete by metadata filter (if supported by your Pinecone plan)
+        index.delete(filter={"page": page_name})
+        
+        # Alternative: Delete all and re-add (simpler but less efficient)
+        # We'll use namespaces to organize by page
+        
+    except Exception as e:
+        print(f"  Note: Could not delete old vectors: {e}")
+
+
+def add_to_pinecone(index_name, chunks, update_mode=True):
+    """Add or update chunks in Pinecone vector store"""
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    
+    if update_mode:
+        print(f"Updating index '{index_name}' with new data...")
+        
+        # Group chunks by page
+        pages = {}
+        for chunk in chunks:
+            page = chunk.metadata.get('page', 'unknown')
+            if page not in pages:
+                pages[page] = []
+            pages[page].append(chunk)
+        
+        # Process each page separately
+        for page, page_chunks in pages.items():
+            print(f"  Processing page: {page} ({len(page_chunks)} chunks)")
+            
+            # Use upsert mode - will overwrite existing vectors with same ID
+            vectorstore = PineconeVectorStore.from_documents(
+                documents=page_chunks,
+                embedding=embeddings,
+                index_name=index_name,
+                namespace=page   # Use page as namespace for organization
+            )
+        
+        print("✓ Index updated successfully!")
+    else:
+        print(f"Adding chunks to index '{index_name}'...")
+        vectorstore = PineconeVectorStore.from_documents(
+            documents=chunks,
+            embedding=embeddings,
+            index_name=index_name
+        )
+        print("✓ Documents added successfully!")
+    
+    # Return vectorstore without namespace for querying all content
+    return PineconeVectorStore(
+        index_name=index_name,
+        embedding=embeddings
+    )
