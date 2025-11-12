@@ -227,3 +227,21 @@ if __name__ == "__main__":
     
     print(f"\n✓ You can now use the index '{index_name}' in your QA application!")
     print(f"✓ Run this script again to update the index with fresh content.")
+
+
+# need to delete this 
+#######################
+######################
+def add_to_pinecone(index_name, chunks):
+    """Add chunks to Pinecone vector store"""
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    
+    print(f"Embedding and storing {len(chunks)} chunks...")
+    vectorstore = PineconeVectorStore.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        index_name=index_name
+    )
+    print("Documents successfully uploaded to Pinecone!")
+    
+    return vectorstore
