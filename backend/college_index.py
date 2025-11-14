@@ -5,7 +5,8 @@ import os
 from datetime import datetime
 
 from langchain.schema import Document
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+
 from langchain_pinecone import PineconeVectorStore
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pinecone import Pinecone, ServerlessSpec
@@ -55,9 +56,8 @@ def chunk_documents(documents, chunk_size=512, chunk_overlap=50):
         chunk_overlap=chunk_overlap
     )
     chunks = text_splitter.split_documents(documents)
-    print(f"✓ Created {len(chunks)} chunks")
-    return chunks
-
+    print(f"Created {len(chunks)} chunks")
+    return chunks 
 
 def get_or_create_index(index_name):
     """Get existing index or create new one"""
@@ -69,7 +69,7 @@ def get_or_create_index(index_name):
         print(f"Creating new index: {index_name}")
         pc.create_index(
             name=index_name,
-            dimension=768,  # text-embedding-004 dimension
+            dimension=384,  # text-embedding-004 dimension
             metric='cosine',
             spec=ServerlessSpec(
                 cloud='aws',
@@ -82,86 +82,41 @@ def get_or_create_index(index_name):
     
     return pc.Index(index_name)
 
+def delete_pinecone_index(index_name="all"):
+    from pinecone import Pinecone, ServerlessSpec
 
-def delete_old_vectors_for_page(index_name, page_name):
-    """Delete old vectors for a specific page before adding new ones"""
-    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-    index = pc.Index(index_name)
-    
-    try:
-        # Query to find all vectors with this page metadata
-        # Note: This requires metadata filtering support in Pinecone
-        print(f"  Checking for existing vectors for page: {page_name}")
-        
-        # Delete by metadata filter (if supported by your Pinecone plan)
-        index.delete(filter={"page": page_name})
-        
-        # Alternative: Delete all and re-add (simpler but less efficient)
-        # We'll use namespaces to organize by page
-        
-    except Exception as e:
-        print(f"  Note: Could not delete old vectors: {e}")
+    pc = Pinecone(
+        api_key=os.environ.get("PINECONE_API_KEY")
+    )
 
-
-def add_to_pinecone(index_name, chunks, update_mode=True):
-    """Add or update chunks in Pinecone vector store"""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    
-    if update_mode:
-        print(f"Updating index '{index_name}' with new data...")
-        
-        # Group chunks by page
-        pages = {}
-        for chunk in chunks:
-            page = chunk.metadata.get('page', 'unknown')
-            if page not in pages:
-                pages[page] = []
-            pages[page].append(chunk)
-        
-        # Process each page separately
-        for page, page_chunks in pages.items():
-            print(f"  Processing page: {page} ({len(page_chunks)} chunks)")
-            
-            # Use upsert mode - will overwrite existing vectors with same ID
-            vectorstore = PineconeVectorStore.from_documents(
-                documents=page_chunks,
-                embedding=embeddings,
-                index_name=index_name,
-                namespace=page   # Use page as namespace for organization
-            )
-        
-        print("✓ Index updated successfully!")
+    if index_name == "all":
+        indexes = pc.list_indexes()
+        print("Deleting all indexes...")
+        for index in indexes:
+            pc.delete_index(index.name)
+            print(f"completed deleting index {index.name}")
     else:
-        print(f"Adding chunks to index '{index_name}'...")
-        vectorstore = PineconeVectorStore.from_documents(
-            documents=chunks,
-            embedding=embeddings,
-            index_name=index_name
-        )
-        print("✓ Documents added successfully!")
+        print(f"Deleting index {index_name}")
+        pc.delete_index(index_name)
+        print("Done...")
+
+def add_to_pinecone(index_name, chunks):
+    """Add or update chunks in Pinecone vector store"""
+    embeddings = HuggingFaceBgeEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    
+    print(f"Adding chunks to index '{index_name}'...")
+    vectorstore = PineconeVectorStore.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        index_name=index_name
+    )
+    print("✓ Documents added successfully!")
     
     # Return vectorstore without namespace for querying all content
     return PineconeVectorStore(
         index_name=index_name,
         embedding=embeddings
     )
-
-
-def get_index_stats(index_name):
-    """Get statistics about the index"""
-    try:
-        pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-        index = pc.Index(index_name)
-        stats = index.describe_index_stats()
-        
-        print(f"\n📊 Index Statistics for '{index_name}':")
-        print(f"  Total vectors: {stats.total_vector_count}")
-        if hasattr(stats, 'namespaces'):
-            print(f"  Namespaces: {len(stats.namespaces)}")
-            for ns, count in stats.namespaces.items():
-                print(f"    - {ns}: {count.vector_count} vectors")
-    except Exception as e:
-        print(f"Could not get index stats: {e}")
 
 
 def test_query(vectorstore, query="What is recent notices you can find on MBMC"):
@@ -171,7 +126,7 @@ def test_query(vectorstore, query="What is recent notices you can find on MBMC")
     
     print(f"\n🔍 Testing query: '{query}'")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
     retriever = vectorstore.as_retriever(search_type='similarity', search_kwargs={'k': 3})
     chain = RetrievalQA.from_chain_type(llm=llm, chain_type='stuff', retriever=retriever)
     
@@ -180,7 +135,6 @@ def test_query(vectorstore, query="What is recent notices you can find on MBMC")
 
 
 async def main():
-    """Main function to crawl and update Pinecone index"""
     index_name = "mbmc-college-website"
     
     print("=" * 70)
@@ -199,17 +153,17 @@ async def main():
     print("\n[Step 2] Chunking documents...")
     chunks = chunk_documents(documents, chunk_size=512, chunk_overlap=50)
     
+    delete_pinecone_index()
+
     # Step 3: Get or create Pinecone index
     print("\n[Step 3] Setting up Pinecone index...")
     index = get_or_create_index(index_name)
     
     # Step 4: Add/Update in Pinecone (UPDATE MODE = True)
     print("\n[Step 4] Updating Pinecone index...")
-    vectorstore = add_to_pinecone(index_name, chunks, update_mode=True)
+    vectorstore = add_to_pinecone(index_name, chunks)
     
-    # Step 5: Show statistics
-    get_index_stats(index_name)
-    
+
     print("\n" + "=" * 70)
     print("✅ Process completed successfully!")
     print("=" * 70)
@@ -222,26 +176,8 @@ async def main():
     return vectorstore, index_name
 
 if __name__ == "__main__":
-    # Run the crawler
+    # # Run the crawler
     vectorstore, index_name = asyncio.run(main())
     
-    print(f"\n✓ You can now use the index '{index_name}' in your QA application!")
-    print(f"✓ Run this script again to update the index with fresh content.")
-
-
-# need to delete this 
-#######################
-######################
-def add_to_pinecone(index_name, chunks):
-    """Add chunks to Pinecone vector store"""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    
-    print(f"Embedding and storing {len(chunks)} chunks...")
-    vectorstore = PineconeVectorStore.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        index_name=index_name
-    )
-    print("Documents successfully uploaded to Pinecone!")
-    
-    return vectorstore
+    # print(f"\n✓ You can now use the index '{index_name}' in your QA application!")
+    # print(f"✓ Run this script again to update the index with fresh content.")
