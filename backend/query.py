@@ -118,7 +118,6 @@ def add_to_pinecone(index_name, chunks):
         embedding=embeddings
     )
 
-
 def querying(vectorstore, query="What is recent notices you can find on MBMC"):
     """Test the vectorstore with a sample querying"""
     from langchain.chains import RetrievalQA
@@ -126,7 +125,7 @@ def querying(vectorstore, query="What is recent notices you can find on MBMC"):
     
     print(f"\n🔍 Testing query: '{query}'")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=7)
     retriever = vectorstore.as_retriever(search_type='similarity', search_kwargs={'k': 3})
     chain = RetrievalQA.from_chain_type(llm=llm, chain_type='stuff', retriever=retriever)
     
