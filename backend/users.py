@@ -610,6 +610,7 @@ async def chat(
         
     elif query_type == QueryType.COLLEGE_INFO:
         response = get_college_info_response(query)
+        response = response["answer"]
     
     elif query_type == QueryType.COURSE:
         user_course_records =  get_courses_for_student(session, user_id)

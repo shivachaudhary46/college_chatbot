@@ -14,6 +14,7 @@ from langchain.chains import LLMChain
 from langchain import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain.chains import RetrievalQA
 
 from transformers import pipeline 
 
@@ -22,15 +23,28 @@ load_dotenv(find_dotenv(), override=True)
 import asyncio 
 
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
-from datetime import datetime
 
-from langchain.schema import Document
 from langchain_pinecone import PineconeVectorStore
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone
+from typing import Dict
 
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 genai_key = os.environ.get("GOOGLE_API_KEY")
+
+# =============== Loading pinecone index ==============
+def load_existing_vectorstore(index_name):
+    """Load existing Pinecone vectorstore without re-indexing"""
+    embeddings = HuggingFaceBgeEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    
+    vectorstore = PineconeVectorStore(
+        index_name=index_name,
+        embedding=embeddings,
+        pinecone_api_key=os.getenv("PINECONE_API_KEY")
+    )
+
+    return vectorstore
 
 # =============== Query Classification ==================
 def classify_query(query: str) -> QueryType:
@@ -184,36 +198,110 @@ Be warm, supportive, and conversational."""
     
     return response.strip()
 
-def get_college_info_response(query: str) -> str:
-    """Get college information using web search"""
+
+
+def get_college_info_response(query: str) -> Dict[str, str]:
+    """
+    Get college information using RAG with vectorstore retrieval.
     
+    Args:
+        vectorstore: A LangChain vectorstore instance (e.g., FAISS, Chroma)
+        query: User's question about the college
+        
+    Returns:
+        Dictionary containing the response and retrieved documents info
+    """
+    index_name = "mbmc-college-website"
     try:
-        search = DuckDuckGoSearchRun()
-        search_results = search.run(f"MBMC college {query}")
+        vectorstore = load_existing_vectorstore(index_name)
+        # Initialize LLM
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp", 
+            temperature=0.3
+        )
+        
+        # Configure retriever with better parameters
+        retriever = vectorstore.as_retriever(
+            search_type='similarity',
+            search_kwargs={
+                'k': 5,  # Retrieve top 5 most relevant documents
+                'fetch_k': 20  # Fetch more candidates for MMR if supported
+            }
+        )
+        
+        # Retrieve relevant documents
+        retrieved_docs = retriever.get_relevant_documents(query)
+        
+        # Extract document information for transparency
+        doc_info = []
+        for i, doc in enumerate(retrieved_docs):
+            doc_info.append({
+                'index': i + 1,
+                'content': doc.page_content,
+                'metadata': doc.metadata,
+                'relevance_score': getattr(doc, 'score', 'N/A')
+            })
+        
+        # Format retrieved context
+        context = "\n\n".join([
+            f"Document {i+1}:\n{doc.page_content}" 
+            for i, doc in enumerate(retrieved_docs)
+        ])
+        
+        # Enhanced prompt template
+        template = """You are a knowledgeable and friendly college information assistant. Your role is to help students, parents, and visitors learn about the college.
+
+Context Information from College Database:
+{context}
+
+Student's Question: {query}
+
+Instructions:
+- Provide accurate information based on the context above
+- Be warm, professional, and encouraging
+- If the context contains the answer, cite specific details
+- If information is not in the context, acknowledge this honestly and suggest:
+  * Contacting the admissions office
+  * Visiting the official college website
+  * Checking specific department pages
+- Use bullet points for lists when appropriate
+- Keep responses concise but comprehensive
+
+Response:"""
+
+        # Create prompt
+        prompt = PromptTemplate(
+            input_variables=["context", "query"],
+            template=template
+        )
+        
+        # Create chain with custom prompt
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type='stuff',
+            retriever=retriever,
+            return_source_documents=True,
+            chain_type_kwargs={"prompt": prompt}
+        )
+        
+        # Get response
+        result = qa_chain.invoke({"query": query})
+        
+        return {
+            'answer': result['result'].strip(),
+            'source_documents': doc_info,
+            'query': query,
+            'num_sources': len(retrieved_docs)
+        }
+        
     except Exception as e:
-        search_results = f"Unable to fetch results: {str(e)}"
-    
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.5, google_api_key=genai_key)
-    
-    template = """You are a helpful college assistant providing information.
-You are friendly, professional, and always helpful.
-
-Query: {query}
-
-Search Results: {search_results}
-
-Please provide a helpful and warm response. If specific information isn't available,
-offer to help in other ways."""
-
-    prompt = PromptTemplate(
-        input_variables=["query", "search_results"],
-        template=template
-    )
-    
-    chain = LLMChain(llm=llm, prompt=prompt)
-    response = chain.run({"query": query, "search_results": search_results})
-    
-    return response.strip()
+        return {
+            'answer': f"I apologize, but I encountered an error while searching for information: {str(e)}. Please try rephrasing your question or contact our support team.",
+            'source_documents': [],
+            'query': query,
+            'num_sources': 0,
+            'error': str(e)
+        }
 
 def get_general_search_response(query: str) -> str:
     """Handle general queries with web search"""
@@ -227,13 +315,13 @@ def get_general_search_response(query: str) -> str:
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7, google_api_key=genai_key)
     
     template = """You are a friendly and helpful assistant.
-Help answer questions with a warm, conversational tone.
+        Help answer questions with a warm, conversational tone.
 
-User Question: {query}
+        User Question: {query}
 
-Search Results: {search_results}
+        Search Results: {search_results}
 
-Please provide a helpful and friendly response."""
+        Please provide a helpful and friendly response."""
 
     prompt = PromptTemplate(
         input_variables=["query", "search_results"],
@@ -245,136 +333,5 @@ Please provide a helpful and friendly response."""
     
     return response.strip()
 
-async def crawl_college_website():
-    """Crawl MBMC college website and return documents"""
-    urls = [
-        "https://www.mbmc.edu.np/about-us",
-        "https://www.mbmc.edu.np/publications",
-        "https://www.mbmc.edu.np/course",
-        "https://www.mbmc.edu.np/events",
-        "https://www.mbmc.edu.np/gallery"
-    ]
-    
-    run_conf = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=True)
-    documents = []
-
-    print("Starting to crawl college website...")
-    async with AsyncWebCrawler() as crawler:
-        async for result in await crawler.arun_many(urls, config=run_conf):
-            if result.success:
-                print(f"✓ Successfully crawled: {result.url}")
-                
-                # Create a LangChain Document with metadata
-                doc = Document(
-                    page_content=result.markdown.raw_markdown,
-                    metadata={
-                        "source": result.url,
-                        "page": result.url.split('/')[-1],
-                        "last_updated": datetime.now().isoformat()
-                    }
-                )
-                documents.append(doc)
-            else:
-                print(f"✗ Error crawling {result.url}: {result.error_message}")
-    
-    print(f"\n✓ Total pages crawled: {len(documents)}")
-    return documents
-
-# ======= Chunk documents into smaller size ======
-def chunk_documents(documents, chunk_size=512, chunk_overlap=50):
-    """Split documents into chunks"""
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, 
-        chunk_overlap=chunk_overlap
-    )
-    chunks = text_splitter.split_documents(documents)
-    print(f"✓ Created {len(chunks)} chunks")
-    return chunks
-
-# ====== Get Create index =========
-def get_or_create_index(index_name):
-    """Get existing index or create new one"""
-    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-    
-    existing_indexes = [idx.name for idx in pc.list_indexes()]
-    
-    if index_name not in existing_indexes:
-        print(f"Creating new index: {index_name}")
-        pc.create_index(
-            name=index_name,
-            dimension=768,  # text-embedding-004 dimension
-            metric='cosine',
-            spec=ServerlessSpec(
-                cloud='aws',
-                region='us-east-1'
-            )
-        )
-        print(f"✓ Index '{index_name}' created")
-    else:
-        print(f"✓ Using existing index: {index_name}")
-    
-    return pc.Index(index_name)
-
-# ====== delete old vectors for page ======
-def delete_old_vectors_for_page(index_name, page_name):
-    """Delete old vectors for a specific page before adding new ones"""
-    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-    index = pc.Index(index_name)
-    
-    try:
-        # Query to find all vectors with this page metadata
-        # Note: This requires metadata filtering support in Pinecone
-        print(f"  Checking for existing vectors for page: {page_name}")
-        
-        # Delete by metadata filter (if supported by your Pinecone plan)
-        index.delete(filter={"page": page_name})
-        
-        # Alternative: Delete all and re-add (simpler but less efficient)
-        # We'll use namespaces to organize by page
-        
-    except Exception as e:
-        print(f"  Note: Could not delete old vectors: {e}")
 
 
-def add_to_pinecone(index_name, chunks, update_mode=True):
-    """Add or update chunks in Pinecone vector store"""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    
-    if update_mode:
-        print(f"Updating index '{index_name}' with new data...")
-        
-        # Group chunks by page
-        pages = {}
-        for chunk in chunks:
-            page = chunk.metadata.get('page', 'unknown')
-            if page not in pages:
-                pages[page] = []
-            pages[page].append(chunk)
-        
-        # Process each page separately
-        for page, page_chunks in pages.items():
-            print(f"  Processing page: {page} ({len(page_chunks)} chunks)")
-            
-            # Use upsert mode - will overwrite existing vectors with same ID
-            vectorstore = PineconeVectorStore.from_documents(
-                documents=page_chunks,
-                embedding=embeddings,
-                index_name=index_name,
-                namespace=page   # Use page as namespace for organization
-            )
-        
-        print("✓ Index updated successfully!")
-    else:
-        print(f"Adding chunks to index '{index_name}'...")
-        vectorstore = PineconeVectorStore.from_documents(
-            documents=chunks,
-            embedding=embeddings,
-            index_name=index_name
-        )
-        print("✓ Documents added successfully!")
-    
-    # Return vectorstore without namespace for querying all content
-    return PineconeVectorStore(
-        index_name=index_name,
-        embedding=embeddings
-    )

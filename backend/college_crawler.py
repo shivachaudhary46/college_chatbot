@@ -104,20 +104,18 @@ def add_to_pinecone(index_name, chunks):
     """Add or update chunks in Pinecone vector store"""
     embeddings = HuggingFaceBgeEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     
-    print(f"Adding chunks to index '{index_name}'...")
     vectorstore = PineconeVectorStore.from_documents(
         documents=chunks,
         embedding=embeddings,
         index_name=index_name
     )
-    print("✓ Documents added successfully!")
-    
+    # Document added succesfully 
+
     # Return vectorstore without namespace for querying all content
     return PineconeVectorStore(
         index_name=index_name,
         embedding=embeddings
     )
-
 
 def test_query(vectorstore, query="What is recent notices you can find on MBMC"):
     """Test the vectorstore with a sample query"""
@@ -136,13 +134,9 @@ def test_query(vectorstore, query="What is recent notices you can find on MBMC")
 
 async def main():
     index_name = "mbmc-college-website"
+    # MBM college website crawler index 
     
-    print("=" * 70)
-    print("🎓 MBMC College Website Crawler & Indexer")
-    print("=" * 70)
-    
-    # Step 1: Crawl the website
-    print("\n[Step 1] Crawling college website...")
+    # Step 1: Crawl the website # need to add logging 
     documents = await crawl_college_website()
     
     if not documents:
@@ -150,26 +144,17 @@ async def main():
         return
     
     # Step 2: Chunk the documents
-    print("\n[Step 2] Chunking documents...")
     chunks = chunk_documents(documents, chunk_size=512, chunk_overlap=50)
     
+    # step 3: Delete pinecone index 
     delete_pinecone_index()
 
-    # Step 3: Get or create Pinecone index
-    print("\n[Step 3] Setting up Pinecone index...")
+    # Step 4: Setting or create Pinecone index
     index = get_or_create_index(index_name)
     
-    # Step 4: Add/Update in Pinecone (UPDATE MODE = True)
-    print("\n[Step 4] Updating Pinecone index...")
+    # Step 5: Add to pinecone
     vectorstore = add_to_pinecone(index_name, chunks)
-    
 
-    print("\n" + "=" * 70)
-    print("✅ Process completed successfully!")
-    print("=" * 70)
-    
-    # Optional: Test with a query
-    print("\n" + "=" * 70)
     test_query(vectorstore, "What is recent notices you can find on MBMC college website ?")
     test_query(vectorstore, "Tell me about MBMC college")
     
