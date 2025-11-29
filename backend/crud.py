@@ -285,10 +285,8 @@ def get_course_by_id(session: Session, course_id: int):
     return course
 
 
-# =============================#
-# STUDENT VIEW COURSES
-# =============================#
 
+# STUDENT VIEW COURSES
 def get_courses_for_student(session: Session, user_id: int):
     enrollments = session.exec(
         select(Course).join(UserCourseLink).where(UserCourseLink.user_id == user_id)
@@ -296,10 +294,7 @@ def get_courses_for_student(session: Session, user_id: int):
     return enrollments
 
 
-# =============================#
 # ENROLLMENT SERVICE
-# =============================#
-
 def enroll_student_to_course(session: Session, course_id: int, student_id: int, user: User):
     """Teacher/Admin enroll student to course"""
 
