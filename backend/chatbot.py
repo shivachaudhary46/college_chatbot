@@ -17,6 +17,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 
 from transformers import pipeline 
+from .model.classify_query import get_classifier
 
 from .schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
@@ -28,6 +29,7 @@ from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from typing import Dict
 
+from .logger import logger
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -48,34 +50,60 @@ def load_existing_vectorstore(index_name):
 
 # =============== Query Classification ==================
 def classify_query(query: str) -> QueryType:
-    """Classify the user query into appropriate categories"""
-    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-    
-    candidate_labels = ["attendance", "fees", "marks", "course", "assignment", "college_info", "user_info", "general", "notices"]
-
-    result = classifier(query, candidate_labels)
-    
-    top_label = result["labels"][0]
-    
-    if top_label == "attendance":
-        return QueryType.ATTENDANCE
-    elif top_label == "marks":
-        return QueryType.MARKS
-    elif top_label == "fees":
-        return QueryType.FEES
-    elif top_label == "college_info":
-        return QueryType.COLLEGE_INFO
-    elif top_label == "course":
-        return QueryType.COURSE
-    elif top_label == "assignment":
-        return QueryType.ASSIGNMENT
-    elif top_label == "user_info":
-        return QueryType.USER_INFO
-    elif top_label == "notices":
-        return QueryType.NOTICES
-    else:
+    """
+    Classify the user query using the trained model
+    """
+    try:
+        # Get the trained classifier instance
+        clf = get_classifier()
+        
+        # Predict query type
+        prediction = clf.predict(query)
+        logger.info(f"query classified into : {prediction}")
+        
+        # Check for errors
+        if "error" in prediction:
+            logger.warning(f"Classification error: {prediction["error"]}, QueryType = {prediction}")
+            # Fallback to GENERAL if classification fails
+            return QueryType.GENERAL
+        
+        # Get predicted query type
+        query_type = prediction["query_type"]
+        confidence = prediction["confidence"]
+        
+        # Log the prediction for debugging
+        print(f"📊 Query: '{query[:50]}...' -> Type: {query_type} (confidence: {confidence:.2%})")
+        
+        # Map prediction to QueryType enum
+        query_type_mapping = {
+            "attendance": QueryType.ATTENDANCE,
+            "fees": QueryType.FEES,
+            "marks": QueryType.MARKS,
+            "course": QueryType.COURSE,
+            "courses": QueryType.COURSE,  # Handle plural
+            "assignment": QueryType.ASSIGNMENT,
+            "assignments": QueryType.ASSIGNMENT,  # Handle plural
+            "college_info": QueryType.COLLEGE_INFO,
+            "user_info": QueryType.USER_INFO,
+            "general": QueryType.GENERAL,
+            "notices": QueryType.NOTICES,
+        }
+        
+        # Get the enum value, default to GENERAL if not found
+        result = query_type_mapping.get(query_type.lower(), QueryType.GENERAL)
+        
+        # If confidence is too low, fallback to GENERAL
+        if confidence < 0.5:  # Adjust threshold as needed
+            print(f"⚠️ Low confidence ({confidence:.2%}), using GENERAL")
+            return QueryType.GENERAL
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error in classify_query: {e}")
+        # Fallback to GENERAL instead of raising exception
         return QueryType.GENERAL
-
+    
 # =============== Data Formatters ==================
 def format_attendance_data(attendance_records: list) -> str:
     """Format attendance records into readable text"""
@@ -202,93 +230,70 @@ Be warm, supportive, and conversational."""
 
 def get_college_info_response(query: str) -> Dict[str, str]:
     """
-    Get college information using RAG with vectorstore retrieval.
-    
-    Args:
-        vectorstore: A LangChain vectorstore instance (e.g., FAISS, Chroma)
-        query: User's question about the college
-        
-    Returns:
-        Dictionary containing the response and retrieved documents info
+    Alternative implementation using LLMChain for more control.
     """
     index_name = "mbmc-college-website"
     try:
         vectorstore = load_existing_vectorstore(index_name)
+        
         # Initialize LLM
         llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash-exp", 
             temperature=0.3
         )
         
-        # Configure retriever with better parameters
+        # Configure retriever
         retriever = vectorstore.as_retriever(
             search_type='similarity',
-            search_kwargs={
-                'k': 5,  # Retrieve top 5 most relevant documents
-                'fetch_k': 20  # Fetch more candidates for MMR if supported
-            }
+            search_kwargs={'k': 5}
         )
         
         # Retrieve relevant documents
         retrieved_docs = retriever.get_relevant_documents(query)
         
-        # Extract document information for transparency
+        # Extract document information
         doc_info = []
         for i, doc in enumerate(retrieved_docs):
             doc_info.append({
                 'index': i + 1,
                 'content': doc.page_content,
-                'metadata': doc.metadata,
-                'relevance_score': getattr(doc, 'score', 'N/A')
+                'metadata': doc.metadata
             })
         
-        # Format retrieved context
+        # Format context
         context = "\n\n".join([
             f"Document {i+1}:\n{doc.page_content}" 
             for i, doc in enumerate(retrieved_docs)
         ])
         
-        # Enhanced prompt template
-        template = """You are a knowledgeable and friendly college information assistant. Your role is to help students, parents, and visitors learn about the college.
+        # Create prompt
+        template = """You are a knowledgeable and friendly college information assistant.
 
-Context Information from College Database:
+Context Information:
 {context}
 
 Student's Question: {query}
 
 Instructions:
-- Provide accurate information based on the context above
+- Provide accurate information based on the context
 - Be warm, professional, and encouraging
-- If the context contains the answer, cite specific details
-- If information is not in the context, acknowledge this honestly and suggest:
-  * Contacting the admissions office
-  * Visiting the official college website
-  * Checking specific department pages
+- If information is not in the context, acknowledge this honestly
 - Use bullet points for lists when appropriate
 - Keep responses concise but comprehensive
 
 Response:"""
 
-        # Create prompt
         prompt = PromptTemplate(
             input_variables=["context", "query"],
             template=template
         )
         
-        # Create chain with custom prompt
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type='stuff',
-            retriever=retriever,
-            return_source_documents=True,
-            chain_type_kwargs={"prompt": prompt}
-        )
-        
-        # Get response
-        result = qa_chain.invoke({"query": query})
+        # Create and run chain
+        chain = LLMChain(llm=llm, prompt=prompt)
+        response = chain.run(context=context, query=query)
         
         return {
-            'answer': result['result'].strip(),
+            'answer': response.strip(),
             'source_documents': doc_info,
             'query': query,
             'num_sources': len(retrieved_docs)
@@ -296,7 +301,7 @@ Response:"""
         
     except Exception as e:
         return {
-            'answer': f"I apologize, but I encountered an error while searching for information: {str(e)}. Please try rephrasing your question or contact our support team.",
+            'answer': f"I apologize, but I encountered an error: {str(e)}",
             'source_documents': [],
             'query': query,
             'num_sources': 0,

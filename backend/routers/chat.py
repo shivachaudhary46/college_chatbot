@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 
-from ..schemas import ChatMessage, ChatResponse, QueryType
+from ..schemas import ChatQuery, ChatResponse, QueryType
 from ..models import User
 from ..crud import (
     get_attendance_by_user_id,
@@ -36,7 +36,7 @@ router = APIRouter(
 
 @router.post("/", response_model=ChatResponse)
 async def chat(
-    message: ChatMessage,
+    message: ChatQuery,
     session: SessionDep,
     user: User = Depends(role_required(["student", "teacher", "admin"])),
 ):

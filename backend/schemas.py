@@ -135,8 +135,9 @@ class QueryType(str, Enum):
     USER_INFO = "user_info"
     NOTICES = "notices"
 
-class ChatMessage(BaseModel):
+class ChatQuery(BaseModel):
     query: str
+    user_id: Optional[int] = None
 
 class ChatResponse(BaseModel):
     response: str

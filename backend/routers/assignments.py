@@ -35,14 +35,17 @@ def add_assignment_endpoints(
 
     try:
         if not user:
+            logger.warning("user not found")
             raise HTTPException(status_code=401, detail="Invalid credentials token")
 
         course = session.get(Course, course_id)
         if not course:
+            logger.warning(f"Course not found of id : {course_id}")
             raise HTTPException(status_code=404, detail="Course not found")
 
         # If teacher, ensure teacher owns the course
         if user.role == "teacher" and course.teacher_id != user.id:
+            logger.warning("Teacher and Admin role are only authorized to add assignment")
             raise HTTPException(
                 status_code=403,
                 detail="You are not authorized to modify this course"
@@ -83,6 +86,7 @@ def update_assignment_endpoints(
         assignment = update_assignment(session, int(assignment_id), assignment_data)
 
         if not assignment:
+            logger.warning("Assignment not found id: {assignment_id}.")
             raise HTTPException(status_code=404, detail="Assignment not found")
 
         logger.info(f"Assignment {assignment_id} updated successfully")
@@ -139,6 +143,7 @@ def get_recent_assignment_per_course_endpoint(
         assignments = get_recent_assignment_per_course(session)
 
         if not assignments:
+            logger.warning("No recent assignment found for any course")
             raise HTTPException(
                 status_code=404,
                 detail="No recent assignments found for any course"
