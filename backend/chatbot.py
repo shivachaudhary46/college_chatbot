@@ -1,56 +1,33 @@
-# chatbot.py
 """
 A chatbot module that integrates with main FastAPI app
 """
 import os
-from enum import Enum
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
-from typing import Annotated, Dict
 from dotenv import load_dotenv, find_dotenv
-import asyncio 
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate  # Keep this for now (not used but doesn't hurt)
+from langchain_core.prompts import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_groq import ChatGroq
-
-from transformers import pipeline 
+ 
 from .model.classify_query import get_classifier
-
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough 
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_groq import ChatGroq
 
 from .schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
 
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
-
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
-from langchain_community.llms import Ollama
+from typing import Dict
 
 from .logger import logger
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 genai_key = os.environ.get("GOOGLE_API_KEY")
-
-# =============== Loading pinecone index ==============
-def load_existing_vectorstore(index_name):
-    """Load existing Pinecone vectorstore without re-indexing"""
-    embeddings = HuggingFaceBgeEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    
-    
-    vectorstore = PineconeVectorStore(
-        index_name=index_name,
-        embedding=embeddings,
-        pinecone_api_key=os.getenv("PINECONE_API_KEY")
-    )
-    logger.info(f"Successfully loaded pinecone vector database {index_name}")
-    return vectorstore
 
 def normalize_label(label):
     """Convert any label format to a standard key"""
@@ -107,51 +84,60 @@ def classify_query(query: str) -> QueryType:
     except Exception as e:
         logger.warning(f"Error in classify_query : {e} will return QueryType = GENERAL")
         return QueryType.GENERAL
+    # chatbot.py
+
+
+# =============== Loading pinecone index ==============
+def load_existing_vectorstore(index_name):
+    """Load existing Pinecone vectorstore without re-indexing"""
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},  # or 'cuda' if available
+        encode_kwargs={'normalize_embeddings': True}
+    )
+    
+    vectorstore = PineconeVectorStore(
+        index_name=index_name,
+        embedding=embeddings,
+        pinecone_api_key=os.getenv("PINECONE_API_KEY")
+    )
+
+    return vectorstore
     
 # =============== Data Formatters ==================
 def format_attendance_data(attendance_records: list) -> str:
     """Format attendance records into readable text"""
     if not attendance_records:
-        logger.warning(f"No attendance record found {attendance_records}")
         return "No attendance records found."
     
     formatted = "Your Attendance Records:\n"
     for record in attendance_records:
         formatted += f"- {record.month} ({record.semester}): {record.total}% - {record.attendee_status}\n"
-    
-    logger.info(f"Formatted attendance records {formatted[-1]}")
     return formatted
 
 def format_fees_data(fees_records: list) -> str:
     """Format fees records into readable text"""
     if not fees_records:
-        logger.warning(f"No fees record found {fees_records}")
         return "No fee records found."
     
     formatted = "Your Fee Payment Records:\n"
     for record in fees_records:
         formatted += f"- Semester {record.semester}: Rs. {record.total_paid} paid, Rs. {record.amount_due} due - {record.payment_status}\n"
-    
-    logger.info(f"Formatted fees records {formatted[-1]}")
-    return formatted    
+    return formatted
 
 def format_marks_data(marks_records: list) -> str:
     """Format marks records into readable text"""
     if not marks_records:
-        logger.warning(f"No marks record found {marks_records}")
         return "No marks records found."
     
     formatted = "Your Marks:\n"
     for record in marks_records:
         formatted += f"- {record.subject} ({record.semester}): {record.total_marks}/100 - Grade: {record.grade} ({record.status})\n"
-    
-    logger.info(f"Formatted marks records {formatted[-1]}")
     return formatted
 
 def format_course_data(course_records: list) -> str:
     """Format course records into readable text"""
     if not course_records:
-        logger.warning(f"No course record found {course_records}")
         return "No course records found."
     
     formatted = "Your Enrolled Courses:\n"
@@ -159,14 +145,11 @@ def format_course_data(course_records: list) -> str:
         formatted += f"- {record.name} (Code: {record.code})\n"
         if hasattr(record, 'teacher_id') and record.teacher_id:
             formatted += f"  Teacher ID: {record.teacher_id}\n"
-
-    logger.info(f"Formatted course records {formatted[-1]}")
     return formatted
 
 def format_assignment_data(assignment_records: list) -> str:
     """Format assignment records into readable text"""
     if not assignment_records:
-        logger.warning(f"No assignment records found {assignment_records}")
         return "No assignment records found."
     
     formatted = "Recent Assignments:\n"
@@ -176,14 +159,11 @@ def format_assignment_data(assignment_records: list) -> str:
         formatted += f"  Description: {record.description}\n"
         formatted += f"  Due Date: {record.due_date.strftime('%Y-%m-%d %H:%M')}\n"
         formatted += f"  Assigned by: User ID {record.teacher_id}\n\n"
-    
-    logger.info(f"Formatted assignment records {formatted[-1]}")
     return formatted
 
 def format_user_data(user_record) -> str:
     """Format user record into readable text"""
     if not user_record:
-        logger.warning(f"No user information found {user_record}")
         return "No user information found."
     
     formatted = "Your Profile Information:\n"
@@ -195,14 +175,11 @@ def format_user_data(user_record) -> str:
     formatted += f"- Role: {user_record.role}\n"
     formatted += f"- Account Status: {'Disabled' if user_record.disabled else 'Active'}\n"
     formatted += f"- Member Since: {user_record.created_at.strftime('%Y-%m-%d')}\n"
-    
-    logger.info(f"Formatted user data successfully.")
     return formatted
 
 def format_notice_data(notice_records: list) -> str:
     """Format notice records into readable text"""
     if not notice_records:
-        logger.warning(f"No notices found {notice_records}.")
         return "No notices found."
     
     formatted = "Recent Notices:\n"
@@ -219,8 +196,6 @@ def format_notice_data(notice_records: list) -> str:
             formatted += f"   Created By: {record.created_by}\n"
         formatted += f"   Posted: {record.created_at.strftime('%Y-%m-%d %H:%M')}\n"
         formatted += "   " + "-"*50 + "\n"
-    logger.info(f"formatted notice records successfully {notice_records[-1]}")
-    
     return formatted
 
 # =============== LLM Response Generators ==================
@@ -229,7 +204,7 @@ def get_conversational_response(user_data: str, query: str) -> str:
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7, google_api_key=genai_key)
     
-    prompt_text = f"""You are a friendly and helpful college student assistant chatbot.
+    template = """You are a friendly and helpful college student assistant chatbot.
 Your tone should be warm, professional, and encouraging - like a helpful friend.
 Keep responses concise and natural.
 
@@ -240,24 +215,31 @@ Student Information:
 
 Please provide a helpful response based on the student's information. 
 Be warm, supportive, and conversational."""
+
+    prompt = PromptTemplate(
+        input_variables=["query", "user_data"],
+        template=template
+    )
     
-    response = llm.invoke(prompt_text)
+    chain = prompt | llm
+    response = chain.invoke({"query": query, "user_data": user_data})
     
-    return response.content.strip()
+    return response.strip()
+
 
 def get_college_info_response(query: str) -> Dict[str, str]:
     """
-    Modern implementation using Groq with LCEL (LangChain Expression Language)
+    Alternative implementation using LLMChain for more control.
     """
     index_name = "mbmc-college-website"
     try:
         vectorstore = load_existing_vectorstore(index_name)
         
-        # Initialize Groq LLM
+        # Initialize LLM
         llm = ChatGroq(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             temperature=0.3,
-            api_key=os.getenv("GROQ_API_KEY")
+            groq_api_key=os.getenv("GROQ_API_KEY")
         )
         
         # Configure retriever
@@ -265,10 +247,9 @@ def get_college_info_response(query: str) -> Dict[str, str]:
             search_type='similarity',
             search_kwargs={'k': 5}
         )
-
+        
         # Retrieve relevant documents
         retrieved_docs = retriever.invoke(query)
-        logger.info(f"Successfully retrieved {len(retrieved_docs)} documents")
         
         # Extract document information
         doc_info = []
@@ -285,8 +266,8 @@ def get_college_info_response(query: str) -> Dict[str, str]:
             for i, doc in enumerate(retrieved_docs)
         ])
         
-        # Create prompt template
-        prompt = ChatPromptTemplate.from_template("""You are a knowledgeable and friendly college information assistant.
+        # Create prompt
+        template = """You are a knowledgeable and friendly college information assistant.
 
 Context Information:
 {context}
@@ -300,29 +281,28 @@ Instructions:
 - Use bullet points for lists when appropriate
 - Keep responses concise but comprehensive
 
-Response:""")
-        
-        # Create chain using LCEL (modern way)
-        chain = (
-            {"context": lambda x: context, "query": lambda x: query}
-            | prompt
-            | llm
-            | StrOutputParser()
+Response:"""
+
+        prompt = PromptTemplate(
+            input_variables=["context", "query"],
+            template=template
         )
         
-        # Run the chain
-        response = chain.invoke({})
+        # Create and run chain
+        chain = prompt | llm
+        result = chain.invoke({"context": context, "query": query})
         
-        logger.info(f"Generated response using Groq")
+        # Extract content from AIMessage object
+        response_text = result.content if hasattr(result, 'content') else str(result)
+        
         return {
-            'answer': response.strip(),
+            'answer': response_text.strip(),
             'source_documents': doc_info,
             'query': query,
             'num_sources': len(retrieved_docs)
         }
         
     except Exception as e:
-        logger.warning(f"Failed to generate response: {e}")
         return {
             'answer': f"I apologize, but I encountered an error: {str(e)}",
             'source_documents': [],
@@ -330,211 +310,6 @@ Response:""")
             'num_sources': 0,
             'error': str(e)
         }
-
-# no version
-# def get_college_info_response(query: str) -> Dict[str, str]:
-#     """No LLM - just return retrieved documents"""
-#     index_name = "mbmc-college-website"
-#     try:
-#         vectorstore = load_existing_vectorstore(index_name)
-#         retriever = vectorstore.as_retriever(
-#             search_type='similarity',
-#             search_kwargs={'k': 3}
-#         )
-        
-#         retrieved_docs = retriever.get_relevant_documents(query)
-        
-#         # Format the answer without LLM
-#         answer = "Here's what I found:\n\n"
-#         for i, doc in enumerate(retrieved_docs, 1):
-#             answer += f"{i}. {doc.page_content}\n\n"
-        
-#         return {
-#             'answer': answer.strip(),
-#             'source_documents': [{'content': d.page_content} for d in retrieved_docs],
-#             'query': query,
-#             'num_sources': len(retrieved_docs)
-#         }
-#     except Exception as e:
-#         return {
-#             'answer': f"Error: {str(e)}",
-#             'source_documents': [],
-#             'query': query,
-#             'num_sources': 0
-#         }
-
-# ollama version 
-# def get_college_info_response(query: str) -> Dict[str, str]:
-#     """
-#     Implementation using Ollama !)
-#     """
-#     index_name = "mbmc-college-website"
-#     try:
-#         vectorstore = load_existing_vectorstore(index_name)
-        
-#         # Initialize Ollama LLM (runs locally on your machine)
-#         llm = Ollama(
-#             model="tinyllama",
-#             temperature=0.3,
-#         )
-        
-#         # Configure retriever
-#         retriever = vectorstore.as_retriever(
-#             search_type='similarity',
-#             search_kwargs={'k': 5}
-#         )
-
-#         # Retrieve relevant documents
-#         retrieved_docs = retriever.get_relevant_documents(query)
-#         logger.info(f"Successfully retrieved similarity documents")
-        
-#         # Extract document information
-#         doc_info = []
-#         for i, doc in enumerate(retrieved_docs):
-#             doc_info.append({
-#                 'index': i + 1,
-#                 'content': doc.page_content,
-#                 'metadata': doc.metadata
-#             })
-#         logger.info(f"Successfully retrieved similarity documents")
-        
-#         # Format context
-#         context = "\n\n".join([
-#             f"Document {i+1}:\n{doc.page_content}" 
-#             for i, doc in enumerate(retrieved_docs)
-#         ])
-#         logger.info(f"Successfully formatted context")
-        
-#         # Create prompt
-#         template = """You are a knowledgeable and friendly college information assistant.
-
-# Context Information:
-# {context}
-
-# Student's Question: {query}
-
-# Instructions:
-# - Provide accurate information based on the context
-# - Be warm, professional, and encouraging
-# - If information is not in the context, acknowledge this honestly
-# - Use bullet points for lists when appropriate
-# - Keep responses concise but comprehensive
-
-# Response:"""
-
-#         prompt = PromptTemplate(
-#             input_variables=["context", "query"],
-#             template=template
-#         )
-        
-#         # Create and run chain
-#         chain = LLMChain(llm=llm, prompt=prompt)
-#         response = chain.run(context=context, query=query)
-        
-#         logger.info(f"Generated response, {len(retrieved_docs)}")
-#         return {
-#             'answer': response.strip(),
-#             'source_documents': doc_info,
-#             'query': query,
-#             'num_sources': len(retrieved_docs)
-#         }
-        
-#     except Exception as e:
-#         logger.warning(f"Failed to generate a response for querytype:{query}, Error: {e}")
-#         return {
-#             'answer': f"I apologize, but I encountered an error: {str(e)}",
-#             'source_documents': [],
-#             'query': query,
-#             'num_sources': 0,
-#             'error': str(e)
-#         }
-
-
-############### Gemini ################
-# def get_college_info_response(query: str) -> Dict[str, str]:
-#     """
-#     Alternative implementation using LLMChain for more control.
-#     """
-#     index_name = "mbmc-college-website"
-#     try:
-#         vectorstore = load_existing_vectorstore(index_name)
-        
-#         # Initialize LLM
-#         llm = ChatGoogleGenerativeAI(
-#             model="gemini-2.0-flash-exp", 
-#             temperature=0.3
-#         )
-        
-#         # Configure retriever
-#         retriever = vectorstore.as_retriever(
-#             search_type='similarity',
-#             search_kwargs={'k': 5}
-#         )
-
-#         # Retrieve relevant documents
-#         retrieved_docs = retriever.get_relevant_documents(query)
-#         logger.info(f"successfully retrieved similarity documents")
-        
-#         # Extract document information
-#         doc_info = []
-#         for i, doc in enumerate(retrieved_docs):
-#             doc_info.append({
-#                 'index': i + 1,
-#                 'content': doc.page_content,
-#                 'metadata': doc.metadata
-#             })
-#         logger.info(f"successfully retrived similarity documents")
-        
-#         # Format context
-#         context = "\n\n".join([
-#             f"Document {i+1}:\n{doc.page_content}" 
-#             for i, doc in enumerate(retrieved_docs)
-#         ])
-#         logger.info(f"Successfully formatted context")
-        
-#         # Create prompt
-#         template = """You are a knowledgeable and friendly college information assistant.
-
-# Context Information:
-# {context}
-
-# Student's Question: {query}
-
-# Instructions:
-# - Provide accurate information based on the context
-# - Be warm, professional, and encouraging
-# - If information is not in the context, acknowledge this honestly
-# - Use bullet points for lists when appropriate
-# - Keep responses concise but comprehensive
-
-# Response:"""
-
-#         prompt = PromptTemplate(
-#             input_variables=["context", "query"],
-#             template=template
-#         )
-        
-#         # Create and run chain
-#         chain = LLMChain(llm=llm, prompt=prompt)
-#         response = chain.run(context=context, query=query)
-        
-#         logger.info(f"Generated response , {len(retrieved_docs)}")
-#         return {
-#             'answer': response.strip(),
-#             'source_documents': doc_info,
-#             'query': query,
-#             'num_sources': len(retrieved_docs)
-#         }
-        
-#     except Exception as e:
-#         logger.warning(f"Failed to generate a response for querytype:{query}")
-#         return {
-#             'answer': f"I apologize, but I encountered an error: {str(e)}",
-#             'source_documents': [],
-#             'query': query,
-#             'num_sources': 0,
-#             'error': str(e)
-#         }
 
 def get_general_search_response(query: str) -> str:
     """Handle general queries with web search"""
@@ -547,18 +322,21 @@ def get_general_search_response(query: str) -> str:
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7, google_api_key=genai_key)
     
-    prompt_text = f"""You are a friendly and helpful assistant.
-Help answer questions with a warm, conversational tone.
+    template = """You are a friendly and helpful assistant.
+        Help answer questions with a warm, conversational tone.
 
-User Question: {query}
+        User Question: {query}
 
-Search Results: {search_results}
+        Search Results: {search_results}
 
-Please provide a helpful and friendly response."""
+        Please provide a helpful and friendly response."""
+
+    prompt = PromptTemplate(
+        input_variables=["query", "search_results"],
+        template=template
+    )
     
-    response = llm.invoke(prompt_text)
+    chain = prompt | llm
+    response = chain.invoke({"query": query, "search_results": search_results})
     
-    return response.content.strip()
-
-
-
+    return response.strip()

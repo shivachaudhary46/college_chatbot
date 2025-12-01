@@ -31,6 +31,7 @@ def add_marks_record(
     """Add marks record for a student (teacher/admin access only)"""
     try:
         if not user:
+            logger.warning(f"could not verify credentials token")
             raise HTTPException(status_code=401, detail="Invalid credentials token")
 
         student = get_user_by_username(session, student_username)
@@ -50,7 +51,6 @@ def add_marks_record(
         created_marks = create_marks(session, marks)
         logger.info(f"marks created for {marks.user_id}")
         return created_marks
-
     
     except HTTPException:
         raise
