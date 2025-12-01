@@ -137,7 +137,6 @@ class QueryType(str, Enum):
 
 class ChatQuery(BaseModel):
     query: str
-    user_id: Optional[int] = None
 
 class ChatResponse(BaseModel):
     response: str
