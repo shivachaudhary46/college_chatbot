@@ -25,7 +25,7 @@ take the username, password with the password bearer token,
 Header -> must be added with bearer + application/json, and we can access 
 with OAuth2PasswordRequestForm
 '''
-oauth_scheme2 = OAuth2PasswordBearer(tokenUrl="api/v1/token")
+oauth_scheme2 = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
 '''
 to get username from the database, it is necessary function to extract
@@ -39,7 +39,7 @@ def get_user(username: str, session: SessionDep) -> User:
     if not account:
         return None
 
-    return User(**account.model_dump())
+    return account
 
 '''
 first, we will try to read the username from the database

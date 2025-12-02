@@ -7,7 +7,6 @@ QRCode - To generate QRCode
 
 Users also need to Download and install the Google Authenticator app from the Playstore / Appstore onto their phones.
 '''
-import time
 import pyotp
 import qrcode
 

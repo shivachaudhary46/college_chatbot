@@ -1,4 +1,5 @@
-import logging
+# auth.py
+
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
@@ -11,9 +12,8 @@ from ..models import User
 from ..OAuth import authenticate_user, create_access_token, get_current_user
 from ..database import SessionDep
 
-# ---------------------------------
+
 # Logger Setup
-# ---------------------------------
 from ..logger import logger
 
 load_dotenv()
