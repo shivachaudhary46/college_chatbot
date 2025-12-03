@@ -96,18 +96,6 @@ def get_course_by_user_id_endpoints(session: SessionDep, student_id: int):
         raise HTTPException(status_code=500, detail="Failed to fetch student courses")
 
 
-# GET STUDENTS IN A COURSE
-@router.get("/courses/{course_id}/students", response_model=List[CourseResponse])
-def get_course_by_course_id_endpoints(session: SessionDep, course_id: int):
-    try:
-        logger.info(f"Fetching students in course_id: {course_id}")
-        return get_students_from_course(session, course_id)
-
-    except Exception as e:
-        logger.error(f"Error fetching students for course {course_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch students")
-
-
 # ENROLL STUDENT
 @router.post("/students/enroll/", response_model=dict[str, str])
 def enroll_student(

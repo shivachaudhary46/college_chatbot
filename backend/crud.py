@@ -141,7 +141,7 @@ def get_fees_by_id(session: Session, fees_id: int) -> Optional[Fees]:
 def get_fees_by_user_id(session: Session, user_id: int) -> Optional[Fees]:
     """Fetch attendance by user id"""
     statement = select(Fees).where(Fees.user_id == user_id)
-    return session.exec(statement).first()
+    return session.exec(statement).all()
 
 def delete_fees_by_id(session: Session, fees_id: int) -> bool:
     """Delete fee record by ID"""
@@ -199,7 +199,7 @@ def get_marks_by_id(session: Session, marks_id: int) -> Optional[Marks]:
 def get_marks_by_user_id(session: Session, user_id: int) -> List[Marks]:
     """Fetch all marks for a user"""
     statement = select(Marks).where(Marks.user_id == user_id)
-    return session.exec(statement).all()
+    return session.exec(statement)
 
 def delete_marks_by_id(session: Session, marks_id: int) -> bool:
     """Delete marks record by ID"""
@@ -382,15 +382,15 @@ def get_recent_assignment_per_course(session: Session) -> List[Assignment]:
             .order_by(desc(Assignment.created_at))
             .limit(1)
         )
-
-    latest_assignment = session.exec(statement).first()
-    if latest_assignment:
-        recent_assignments.append(latest_assignment)
+        
+        # These lines need to be INSIDE the for loop
+        latest_assignment = session.exec(statement).first()
+        if latest_assignment:
+            recent_assignments.append(latest_assignment)
 
     # Step 3: Optionally sort the final list by created_at (newest first)
     recent_assignments.sort(key=lambda a: a.created_at, reverse=True)
     return recent_assignments
-
 
 def get_assignment_by_course_id(session: Session, course_id: int) -> List[Assignment]:
     """Fetch assignments for a specific course"""

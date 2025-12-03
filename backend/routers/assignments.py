@@ -158,10 +158,8 @@ def get_recent_assignment_per_course_endpoint(
         logger.error(f"Unexpected error fetching recent assignments: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
-# ===============================
 # Get Assignment by ID
-# ===============================
+
 @router.get("/assignment/{assignment_id}", response_model=AssignmentResponse)
 def get_assignment_by_id_endpoint(
     assignment_id: int,
@@ -188,7 +186,7 @@ def get_assignment_by_id_endpoint(
 # ===============================
 # Get Assignment by Course ID
 # ===============================
-@router.get("/assignment/course/{course_id}", response_model=AssignmentResponse)
+@router.get("/assignment/course/{course_id}", response_model=List[AssignmentResponse])
 def get_assignment_by_course_id_endpoint(
     course_id: int,
     session: SessionDep

@@ -34,7 +34,7 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     """Initialize database on startup"""
-    create_all_db_tables
+    create_all_db_tables()
     logger.info("Created and intialize the database")
     
     # load the model and save it into the memory, so does not have to rerun 

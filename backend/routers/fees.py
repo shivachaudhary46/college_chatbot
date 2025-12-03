@@ -88,6 +88,7 @@ def get_fees_by_user_id_endpoints(session: SessionDep, user_id: int):
     try:
         fees = get_fees_by_user_id(session, user_id)
         logger.info(f"Successfully fetched the fees by user_id {user_id}")
+        return fees
     except Exception as e:
         logger.error(f"Unexpected error while fetching fees: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

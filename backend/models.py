@@ -79,6 +79,7 @@ class Assignment(SQLModel, table=True):
 
     course_id: Optional[int] = Field(default=None, foreign_key="course.id")
     teacher_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.now)
 
     #relationships 
     user: Optional["User"] = Relationship(back_populates="assignments")

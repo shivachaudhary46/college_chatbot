@@ -71,7 +71,7 @@ def add_attendance(
 
 
 # ================= Get Attendance by User ID ================= #
-@router.get("/", response_model=List[AttendanceResponse])
+@router.get("/{user_id}", response_model=List[AttendanceResponse])
 def get_attendance_by_userid(session: SessionDep, user_id: int):
     """Get attendance records for a specific user"""
     try:

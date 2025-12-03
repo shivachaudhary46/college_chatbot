@@ -71,7 +71,12 @@ def get_marks_endpoints(session: SessionDep):
 def get_marks_by_id_endpoints(session: SessionDep, marks_id: int):
     """Get marks by marks_id"""
     try:
-        return get_marks_by_id(session, marks_id)
+        marks = get_marks_by_id(session, marks_id)
+        if not marks:
+            raise HTTPException(status_code=404, detail="Marks not found")
+        return [marks]  # Wrap in a list
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error while fetching marks: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

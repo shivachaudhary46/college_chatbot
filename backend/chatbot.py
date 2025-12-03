@@ -74,7 +74,7 @@ def classify_query(query: str) -> QueryType:
         result = query_type_mapping.get(query_type_normalized, QueryType.GENERAL)
       
         # If confidence is too low, fallback to GENERAL
-        if confidence < 0.5:  # Adjust threshold as needed
+        if confidence < 0.15:  # Adjust threshold as needed
             logger.info(f"Low confidence ({confidence:.2%}, using GENERAL)")
             return QueryType.GENERAL
         
@@ -224,7 +224,7 @@ Be warm, supportive, and conversational."""
     chain = prompt | llm
     response = chain.invoke({"query": query, "user_data": user_data})
     
-    return response.strip()
+    return response.content.strip()
 
 
 def get_college_info_response(query: str) -> Dict[str, str]:
@@ -339,4 +339,4 @@ def get_general_search_response(query: str) -> str:
     chain = prompt | llm
     response = chain.invoke({"query": query, "search_results": search_results})
     
-    return response.strip()
+    return response.content.strip()
