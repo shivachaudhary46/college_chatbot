@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Mark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f5f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 48px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .trash-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-icon {
+            color: #f57c00;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .label-icon {
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #5e35b1;
+            box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.1);
+        }
+
+        .selected-info {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .selected-info.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #5e35b1;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .table-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr.selected {
+            background: #e3f2fd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .id-cell {
+            font-weight: 600;
+            color: #5e35b1;
+        }
+
+        .grade-cell {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .grade-a { color: #2e7d32; }
+        .grade-b { color: #388e3c; }
+        .grade-c { color: #f57c00; }
+        .grade-d { color: #e64a19; }
+        .grade-f { color: #c62828; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #5e35b1;
+            background: white;
+        }
+
+        .delete-button {
+            width: 100%;
+            padding: 16px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-button:hover {
+            background: #c62828;
+        }
+
+        .delete-button:active {
+            transform: scale(0.98);
+        }
+
+        .delete-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="trash-icon">🗑️</div>
+            <h1>Delete Mark</h1>
+            <p class="subtitle">Remove mark record from the system</p>
+        </div>
+
+        <div class="warning-box">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">This action cannot be undone. Please proceed with caution.</div>
+        </div>
+
+        <div class="form-section">
+            <label>
+                <span class="label-icon">👤</span>
+                Student
+            </label>
+            <select id="usernameDropdown">
+                <option value="" disabled selected>Loading students...</option>
+            </select>
+
+            <div id="selectedInfo" class="selected-info">
+                <span class="info-label">Selected Student ID:</span>
+                <span class="info-value" id="selectedUsername">None</span>
+            </div>
+        </div>
+
+        <div class="section-title">Student Marks</div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th style="width: 100px;">Semester</th>
+                        <th>Subject</th>
+                        <th style="width: 120px;">Total Marks</th>
+                        <th style="width: 80px;">Grade</th>
+                        <th style="width: 130px;">Exam Date</th>
+                    </tr>
+                </thead>
+                <tbody id="marksTableBody">
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            Select a student to view mark records
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-section">
+            <label>
+                <span class="label-icon">🆔</span>
+                Mark ID
+            </label>
+            <input type="text" id="mark_id" placeholder="Select from table above" readonly>
+        </div>
+
+        <button class="delete-button" onclick="deleteMark()" id="deleteBtn" disabled>
+            Delete Mark
+        </button>
+
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        // ===============================
+        // AUTH TOKEN
+        // ===============================
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || 'demo-token-12345';
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            };
+        }
+
+        // ===============================
+        // LOAD STUDENTS
+        // ===============================
+        async function loadUsers() {
+            const dropdown = document.getElementById("usernameDropdown");
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+                
+                if (!response.ok) throw new Error("Failed to load students");
+                
+                const users = await response.json();
+
+                if (!Array.isArray(users) || users.length === 0) {
+                    dropdown.innerHTML = `<option value="" disabled selected>No students available</option>`;
+                    return;
+                }
+
+                dropdown.innerHTML = `<option value="" disabled selected>Select Student</option>`;
+
+                users.forEach(user => {
+                    const option = document.createElement("option");
+                    option.value = user.id;
+                    option.textContent = user.full_name;
+                    dropdown.appendChild(option);
+                });
+
+            } catch (error) {
+                dropdown.innerHTML = `<option value="" disabled selected>Error loading students</option>`;
+                showError("Failed to load students.");
+            }
+        }
+
+        loadUsers();
+
+        // when student selected → load marks
+        document.getElementById("usernameDropdown").addEventListener("change", () => {
+            const userId = document.getElementById("usernameDropdown").value;
+            const userName = document.getElementById("usernameDropdown").options[document.getElementById("usernameDropdown").selectedIndex].text;
+            
+            document.getElementById("selectedUsername").textContent = `${userName} (ID: ${userId})`;
+            document.getElementById("selectedInfo").classList.add("show");
+            
+            // Clear mark selection
+            document.getElementById("mark_id").value = "";
+            document.getElementById("deleteBtn").disabled = true;
+            
+            // Clear any previous messages
+            hideMessages();
+
+            if (userId) {
+                getMarksByUserID(userId);
+            }
+        });
+
+        // ===============================
+        // GET MARKS BY USER ID
+        // ===============================
+        async function getMarksByUserID(userId) {
+            const tbody = document.getElementById("marksTableBody");
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Loading mark records...</td></tr>`;
+
+            const url = `http://127.0.0.1:8000/api/v1/users/marks/${userId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) throw new Error("Failed to load marks");
+
+                const marks = await response.json();
+                renderMarksTable(marks);
+
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #d32f2f;">Error loading mark records</td></tr>`;
+                showError("Failed to load mark records.");
+            }
+        }
+
+        // ===============================
+        // RENDER MARKS TABLE
+        // ===============================
+        function renderMarksTable(records) {
+            const tbody = document.getElementById("marksTableBody");
+
+            if (!Array.isArray(records) || records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No mark records found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = records.map(m => {
+                const gradeClass = m.grade ? `grade-${m.grade.toLowerCase()}` : '';
+                return `
+                    <tr onclick="selectMark(${m.id}, this)">
+                        <td class="id-cell">${m.id}</td>
+                        <td>${m.semester}</td>
+                        <td>${m.subject}</td>
+                        <td>${m.total_marks}</td>
+                        <td class="grade-cell ${gradeClass}">${m.grade || '-'}</td>
+                        <td>${m.exam_date || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectMark(id, row) {
+            // Remove previous selection
+            document.querySelectorAll('#marksTableBody tr').forEach(tr => {
+                tr.classList.remove('selected');
+            });
+            
+            // Add selection to clicked row
+            row.classList.add('selected');
+            
+            // Update mark ID input
+            document.getElementById('mark_id').value = id;
+            document.getElementById('deleteBtn').disabled = false;
+            
+            hideMessages();
+        }
+
+        // ===============================
+        // DELETE MARK
+        // ===============================
+        async function deleteMark() {
+            const markId = document.getElementById("mark_id").value;
+
+            if (!markId) {
+                showError("Please select a mark from the table above.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete mark record #${markId}? This action cannot be undone.`)) {
+                return;
+            }
+
+            const deleteBtn = document.getElementById("deleteBtn");
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Deleting...";
+
+            const url = `http://127.0.0.1:8000/api/v1/marks/${markId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                const json = await response.json();
+
+                if (response.ok) {
+                    showSuccess("Mark record deleted successfully!");
+                    
+                    // Refresh the marks list
+                    const userId = document.getElementById("usernameDropdown").value;
+                    if (userId) {
+                        getMarksByUserID(userId);
+                    }
+                    
+                    // Clear mark ID
+                    document.getElementById("mark_id").value = "";
+                } else {
+                    throw new Error(json.message || "Failed to delete mark");
+                }
+
+            } catch (error) {
+                showError("Error: " + error.message);
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = "Delete Mark";
+            }
+        }
+
+        // ===============================
+        // HELPER FUNCTIONS
+        // ===============================
+        function showError(message) {
+            const errorBox = document.getElementById("errorMessage");
+            errorBox.textContent = message;
+            errorBox.classList.add("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+
+        function showSuccess(message) {
+            const successBox = document.getElementById("successMessage");
+            successBox.textContent = message;
+            successBox.classList.add("show");
+            document.getElementById("errorMessage").classList.remove("show");
+        }
+
+        function hideMessages() {
+            document.getElementById("errorMessage").classList.remove("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Fee Record</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary: #6b8cff;
+    --accent: #00c6a9;
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --radius: 14px;
+    --shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #e3ebff, #f4fff9);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: var(--card);
+    width: 100%;
+    max-width: 430px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 25px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h2 {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text);
+}
+
+header span {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: block;
+    margin-bottom: 6px;
+}
+
+select, input {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    outline: none;
+    font-size: 14px;
+}
+
+select:focus, input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(107,140,255,.2);
+}
+
+.selected-box {
+    background: linear-gradient(to right, #f3f6ff, #eafff8);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+.selected-box span {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease, opacity .2s;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    opacity: .9;
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.response-box {
+    margin-top: 15px;
+    background: #f9fafb;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <h2>💰 Fee Record</h2>
+    <span>Add payment details for student</span>
+</header>
+
+<div class="form-group">
+    <label>👤 Student</label>
+    <select id="usernameDropdown">
+        <option>Loading...</option>
+    </select>
+</div>
+
+<div class="selected-box">
+    Selected:&nbsp;<span id="selectedUsername">None</span>
+</div>
+
+<div class="form-group">
+    <label>🎓 Semester</label>
+    <select id="semester">
+        <option value="">Select Semester</option>
+        <option value="1">1st Semester</option>
+        <option value="2">2nd Semester</option>
+        <option value="3">3rd Semester</option>
+        <option value="4">4th Semester</option>
+        <option value="5">5th Semester</option>
+        <option value="6">6th Semester</option>
+        <option value="7">7th Semester</option>
+        <option value="8">8th Semester</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label>💳 Total Paid</label>
+    <input type="number" id="total_paid" placeholder="Enter paid amount">
+</div>
+
+<button onclick="addFee()">Submit Fee Record</button>
+
+<div class="response-box">
+    <pre id="responseBox"></pre>
+</div>
+
+<footer>College Management System</footer>
+
+</div>
+
+<script>
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+async function loadUsers() {
+    const dropdown = document.getElementById("usernameDropdown");
+
+    try {
+        const response = await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+        const users = await response.json();
+
+        dropdown.innerHTML = "";
+
+        users.forEach(user => {
+            const option = document.createElement("option");
+            option.value = user.username;
+            option.textContent = user.full_name;
+            dropdown.appendChild(option);
+        });
+
+    } catch (error) {
+        dropdown.innerHTML = "<option>Error loading users</option>";
+    }
+}
+
+document.getElementById("usernameDropdown").addEventListener("change", () => {
+    const value = document.getElementById("usernameDropdown").value;
+    document.getElementById("selectedUsername").textContent = value || "None";
+});
+
+loadUsers();
+
+async function addFee() {
+
+    const username = document.getElementById("usernameDropdown").value;
+    const semester = Number(document.getElementById("semester").value);
+    const totalPaid = Number(document.getElementById("total_paid").value);
+    const token = getAuthToken()
+
+    if (!username || !semester || !totalPaid) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    const url = `http://127.0.0.1:8000/api/v1/fees/users/${username}/`;
+
+    const bodyData = {
+        semester: semester,
+        total_paid: totalPaid
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify(bodyData)
+        });
+
+        const result = await response.json();
+
+        document.getElementById("responseBox").textContent =
+            JSON.stringify(result, null, 2);
+
+    } catch (error) {
+        document.getElementById("responseBox").textContent =
+            "Error: " + error.message;
+    }
+}
+</script>
+
+</body>
+</html>

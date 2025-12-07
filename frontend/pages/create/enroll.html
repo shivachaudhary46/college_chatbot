@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enroll Student</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+
+body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(135deg, #e8f1ff, #f5fbff);
+}
+
+.card{
+    width:410px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-radius:18px;
+    padding:30px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.08);
+    animation:fadeIn .5s ease;
+}
+
+@keyframes fadeIn{
+    from{opacity:0;transform:translateY(-20px)}
+    to{opacity:1;transform:translateY(0)}
+}
+
+h2{
+    text-align:center;
+    margin-bottom:6px;
+    color:#1f2937;
+}
+
+.subtitle{
+    text-align:center;
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:20px;
+}
+
+.group{margin-bottom:14px;}
+
+label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:600;
+    color:#374151;
+    margin-bottom:5px;
+}
+
+select{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1.3px solid #e5e7eb;
+    outline:none;
+    font-size:14px;
+    transition:.2s;
+    background:white;
+}
+
+select:focus{
+    border-color:#6d8dff;
+    box-shadow:0 0 0 3px rgba(100,120,255,0.1);
+}
+
+.info{
+    background:linear-gradient(to right,#eff6ff,#ecfeff);
+    color:#2563eb;
+    font-weight:600;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:14px;
+    font-size:13px;
+}
+
+.btn{
+    width:100%;
+    padding:13px;
+    margin-top:12px;
+    border:none;
+    border-radius:12px;
+    color:white;
+    background:linear-gradient(90deg,#7c8cff,#64c7b8);
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn:hover{opacity:.9}
+
+#responseBox{
+    margin-top:16px;
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    padding:10px;
+    border-radius:8px;
+    font-size:12px;
+    max-height:160px;
+    overflow:auto;
+}
+
+.footer{
+    text-align:center;
+    margin-top:12px;
+    font-size:12px;
+    color:#6b7280;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>📌 Enroll Student</h2>
+    <div class="subtitle">Assign a student to a course</div>
+
+    <div class="group">
+        <label>📚 Course</label>
+        <select id="courseDropdown">
+    <option value="" disabled selected>Select Course</option>
+</select>
+    </div>
+
+    <div class="info" id="selectedCourse">Selected Course: None</div>
+
+    <div class="group">
+        <label>👤 Student</label>
+        <select id="studentDropdown">
+    <option value="" disabled selected>Select Student</option>
+</select>
+
+    </div>
+
+
+    <div class="info" id="selectedStudent">Selected Student: None</div>
+
+    <button class="btn" onclick="enrollStudent()">Enroll Student</button>
+
+    <pre id="responseBox">Waiting...</pre>
+
+    <div class="footer">College Management System</div>
+</div>
+
+<script>
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+// LOAD COURSES
+async function loadCourses(){
+    const dropdown=document.getElementById("courseDropdown");
+    const res = await fetch("http://127.0.0.1:8000/api/v1/users/courses/");
+    const courses = await res.json();
+
+    dropdown.innerHTML = `<option value="" disabled selected>Select Course</option>`;
+
+    courses.forEach(c=>{
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        dropdown.appendChild(opt);
+    });
+}
+
+// LOAD STUDENTS
+async function loadStudents(){
+    const dropdown=document.getElementById("studentDropdown");
+    const res = await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+    const students = await res.json();
+
+    dropdown.innerHTML = `<option value="" disabled selected>Select Student</option>`;
+
+    students.forEach(s=>{
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.full_name;
+        dropdown.appendChild(opt);
+    });
+}
+
+
+courseDropdown.addEventListener("change",()=>{
+    const selected = courseDropdown.options[courseDropdown.selectedIndex];
+    selectedCourse.textContent = `Selected Course: ${selected.text} (ID: ${selected.value})`;
+});
+
+
+studentDropdown.addEventListener("change",()=>{
+    const selected = studentDropdown.options[studentDropdown.selectedIndex];
+    selectedStudent.textContent = `Selected Student: ${selected.text} (ID: ${selected.value})`;
+});
+// ENROLL STUDENT
+async function enrollStudent(){
+    const courseId = courseDropdown.value;
+    const studentId = studentDropdown.value;
+    const token = getAuthToken()
+
+    if(!courseId || !studentId){
+        responseBox.textContent="Please select both student and course.";
+        return;
+    }
+
+    const url = `http://127.0.0.1:8000/api/v1/students/enroll/?course_id=${courseId}&student_id=${studentId}`;
+
+    responseBox.textContent="Enrolling...";
+
+    try{
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type":"application/json",
+                "Authorization":"Bearer " + token
+            }
+        });
+        const data = await res.json();
+        responseBox.textContent = JSON.stringify(data,null,2);
+    }catch(err){
+        responseBox.textContent="Error: "+err.message;
+    }
+}
+
+
+loadCourses();
+loadStudents();
+</script>
+
+</body>
+</html>

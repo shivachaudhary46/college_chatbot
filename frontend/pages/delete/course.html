@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Course</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f5f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 48px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .trash-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-icon {
+            color: #f57c00;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .label-icon {
+            color: #5e35b1;
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #5e35b1;
+            box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.1);
+        }
+
+        select option {
+            padding: 10px;
+        }
+
+        .delete-button {
+            width: 100%;
+            padding: 16px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-button:hover {
+            background: #c62828;
+        }
+
+        .delete-button:active {
+            transform: scale(0.98);
+        }
+
+        .delete-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .course-info {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .course-info.show {
+            display: block;
+        }
+
+        .course-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .course-detail:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .detail-value {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="trash-icon">🗑️</div>
+            <h1>Delete Course</h1>
+            <p class="subtitle">Remove course from the system</p>
+        </div>
+
+        <div class="warning-box">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">This action cannot be undone. Please proceed with caution.</div>
+        </div>
+
+        <div class="section-title">Your Courses</div>
+
+        <div class="form-section">
+            <label>
+                <span class="label-icon">📚</span>
+                Course ID
+            </label>
+            <select id="courseDropdown">
+                <option value="" disabled selected>Loading courses...</option>
+            </select>
+
+            <div id="courseInfo" class="course-info">
+                <div class="course-detail">
+                    <span class="detail-label">Course ID:</span>
+                    <span class="detail-value" id="displayCourseId">-</span>
+                </div>
+                <div class="course-detail">
+                    <span class="detail-label">Course Name:</span>
+                    <span class="detail-value" id="displayCourseName">-</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="delete-button" onclick="deleteCourse()" id="deleteBtn" disabled>
+            Delete Course
+        </button>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <input type="hidden" id="course_id">
+    </div>
+
+    <script>
+        /* ===============================
+           AUTH HELPERS
+        ================================ */
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || 'demo-token-12345';
+        }
+
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getAuthToken()}`
+            };
+        }
+
+        async function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                showError("Authentication required. Please log in.");
+                return null;
+            }
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/me", {
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok) {
+                    throw new Error("Authentication failed");
+                }
+
+                return await res.json();
+            } catch (err) {
+                showError("Authentication failed. Please log in again.");
+                return null;
+            }
+        }
+
+        /* ===============================
+           LOAD TEACHER COURSES
+        ================================ */
+        async function loadTeacherCourses() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            const dropdown = document.getElementById("courseDropdown");
+
+            try {
+                const res = await fetch(
+                    `http://127.0.0.1:8000/api/v1/teachers/${user.id}/courses`,
+                    { headers: getAuthHeaders() }
+                );
+
+                if (!res.ok) {
+                    throw new Error("Failed to load courses");
+                }
+
+                const courses = await res.json();
+
+                if (!Array.isArray(courses) || courses.length === 0) {
+                    dropdown.innerHTML = `<option value="" disabled selected>No courses available</option>`;
+                    return;
+                }
+
+                dropdown.innerHTML = `<option value="" disabled selected>Select from table above</option>`;
+
+                courses.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = `${c.id} - ${c.name}`;
+                    opt.dataset.name = c.name;
+                    dropdown.appendChild(opt);
+                });
+
+            } catch (err) {
+                dropdown.innerHTML = `<option value="" disabled selected>Error loading courses</option>`;
+                showError("Failed to load courses. Please try again.");
+            }
+        }
+
+        loadTeacherCourses();
+
+        /* ===============================
+           ON COURSE SELECT
+        ================================ */
+        document.getElementById("courseDropdown").addEventListener("change", function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const courseId = selectedOption.value;
+            const courseName = selectedOption.dataset.name;
+
+            if (courseId) {
+                document.getElementById("course_id").value = courseId;
+                document.getElementById("displayCourseId").textContent = courseId;
+                document.getElementById("displayCourseName").textContent = courseName;
+                document.getElementById("courseInfo").classList.add("show");
+                document.getElementById("deleteBtn").disabled = false;
+                hideMessages();
+            }
+        });
+
+        /* ===============================
+           DELETE COURSE
+        ================================ */
+        async function deleteCourse() {
+            const courseId = document.getElementById("course_id").value;
+            const courseName = document.getElementById("displayCourseName").textContent;
+            const token = getAuthToken();
+
+            if (!courseId) {
+                showError("Please select a course first.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete "${courseName}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            const deleteBtn = document.getElementById("deleteBtn");
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Deleting...";
+
+            const url = `http://127.0.0.1:8000/api/v1/delete_course/?course_id=${courseId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                const json = await response.json();
+
+                if (response.ok) {
+                    showSuccess(`Course "${courseName}" deleted successfully!`);
+
+                    // Remove deleted course from dropdown
+                    const dropdown = document.getElementById("courseDropdown");
+                    const optionToRemove = dropdown.querySelector(`option[value='${courseId}']`);
+                    if (optionToRemove) dropdown.removeChild(optionToRemove);
+
+                    // Reset form
+                    dropdown.value = "";
+                    document.getElementById("course_id").value = "";
+                    document.getElementById("courseInfo").classList.remove("show");
+
+                } else {
+                    throw new Error(json.message || "Failed to delete course");
+                }
+
+            } catch (error) {
+                showError("Error: " + error.message);
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = "Delete Course";
+            }
+        }
+
+        /* ===============================
+           HELPER FUNCTIONS
+        ================================ */
+        function showError(message) {
+            const errorBox = document.getElementById("errorMessage");
+            errorBox.textContent = message;
+            errorBox.classList.add("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+
+        function showSuccess(message) {
+            const successBox = document.getElementById("successMessage");
+            successBox.textContent = message;
+            successBox.classList.add("show");
+            document.getElementById("errorMessage").classList.remove("show");
+        }
+
+        function hideMessages() {
+            document.getElementById("errorMessage").classList.remove("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unenroll Student</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f5f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 48px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-icon {
+            color: #f57c00;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .label-icon {
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #5e35b1;
+            box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.1);
+        }
+
+        .selected-info {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 32px;
+            display: none;
+        }
+
+        .selected-info.show {
+            display: block;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .table-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .id-cell {
+            font-weight: 600;
+            color: #5e35b1;
+        }
+
+        .truncate {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .unenroll-button {
+            width: 100%;
+            padding: 16px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .unenroll-button:hover {
+            background: #c62828;
+        }
+
+        .unenroll-button:active {
+            transform: scale(0.98);
+        }
+
+        .unenroll-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">❌</div>
+            <h1>Unenroll Student</h1>
+            <p class="subtitle">Remove student enrollment from course</p>
+        </div>
+
+        <div class="warning-box">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">This action cannot be undone. Please proceed with caution.</div>
+        </div>
+
+        <div class="section-title">Select Student & Course</div>
+
+        <div class="form-grid">
+            <div>
+                <label>
+                    <span class="label-icon">👤</span>
+                    Select Student
+                </label>
+                <select id="studentDropdown">
+                    <option value="" disabled selected>Loading students...</option>
+                </select>
+            </div>
+
+            <div>
+                <label>
+                    <span class="label-icon">📘</span>
+                    Select Course
+                </label>
+                <select id="courseDropdown">
+                    <option value="" disabled selected>Loading courses...</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="selectedInfo" class="selected-info">
+            <div class="info-row">
+                <span class="info-label">Student:</span>
+                <span class="info-value" id="selectedStudent">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Student ID:</span>
+                <span class="info-value" id="selectedStudentId">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Course:</span>
+                <span class="info-value" id="selectedCourse">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Course ID:</span>
+                <span class="info-value" id="selectedCourseId">-</span>
+            </div>
+        </div>
+
+        <div class="section-title">Student Enrolled Courses</div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Name</th>
+                        <th style="width: 120px;">Code</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="courseTableBody">
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            Select a student to view enrolled courses
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button class="unenroll-button" onclick="unenrollStudent()" id="unenrollBtn" disabled>
+            <span>❌</span>
+            Unenroll Student From Selected Course
+        </button>
+
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        /* ==========================
+           AUTH HELPERS
+        ========================== */
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || 'demo-token-12345';
+        }
+
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getAuthToken()}`
+            };
+        }
+
+        async function getTeacher() {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/me", {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!res.ok) throw new Error("Authentication failed");
+                return await res.json();
+            } catch (err) {
+                showError("Authentication failed. Please log in.");
+                return null;
+            }
+        }
+
+        /* ==========================
+           LOAD STUDENTS
+        ========================== */
+        async function loadStudents() {
+            const dropdown = document.getElementById("studentDropdown");
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+                
+                if (!res.ok) throw new Error("Failed to load students");
+                
+                const students = await res.json();
+
+                if (!Array.isArray(students) || students.length === 0) {
+                    dropdown.innerHTML = `<option value="" disabled selected>No students available</option>`;
+                    return;
+                }
+
+                dropdown.innerHTML = `<option value="" disabled selected>Select Student</option>`;
+
+                students.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = s.full_name;
+                    dropdown.appendChild(opt);
+                });
+
+            } catch (err) {
+                dropdown.innerHTML = `<option value="" disabled selected>Error loading students</option>`;
+                showError("Failed to load students.");
+            }
+        }
+
+        /* ==========================
+           LOAD TEACHER COURSES
+        ========================== */
+        async function loadCourses() {
+            const dropdown = document.getElementById("courseDropdown");
+            const teacher = await getTeacher();
+
+            if (!teacher) return;
+
+            try {
+                const res = await fetch(
+                    `http://127.0.0.1:8000/api/v1/teachers/${teacher.id}/courses`,
+                    { headers: getAuthHeaders() }
+                );
+
+                if (!res.ok) throw new Error("Failed to load courses");
+
+                const courses = await res.json();
+
+                if (!Array.isArray(courses) || courses.length === 0) {
+                    dropdown.innerHTML = `<option value="" disabled selected>No courses available</option>`;
+                    return;
+                }
+
+                dropdown.innerHTML = `<option value="" disabled selected>Select Course</option>`;
+
+                courses.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    dropdown.appendChild(opt);
+                });
+
+            } catch (err) {
+                dropdown.innerHTML = `<option value="" disabled selected>Error loading courses</option>`;
+                showError("Failed to load courses.");
+            }
+        }
+
+        // Initialize dropdowns
+        loadStudents();
+        loadCourses();
+
+        /* ==========================
+           ON CHANGE EVENTS
+        ========================== */
+        document.getElementById("studentDropdown").addEventListener("change", () => {
+            updateSelectedInfo();
+            loadEnrolledCourses();
+        });
+
+        document.getElementById("courseDropdown").addEventListener("change", () => {
+            updateSelectedInfo();
+        });
+
+        /* Show selected info */
+        function updateSelectedInfo() {
+            const studentDropdown = document.getElementById("studentDropdown");
+            const courseDropdown = document.getElementById("courseDropdown");
+            
+            const s = studentDropdown.options[studentDropdown.selectedIndex];
+            const c = courseDropdown.options[courseDropdown.selectedIndex];
+
+            if (s && s.value && c && c.value) {
+                document.getElementById("selectedStudent").textContent = s.text;
+                document.getElementById("selectedStudentId").textContent = s.value;
+                document.getElementById("selectedCourse").textContent = c.text;
+                document.getElementById("selectedCourseId").textContent = c.value;
+                document.getElementById("selectedInfo").classList.add("show");
+                document.getElementById("unenrollBtn").disabled = false;
+            } else if (s && s.value) {
+                document.getElementById("selectedStudent").textContent = s.text;
+                document.getElementById("selectedStudentId").textContent = s.value;
+                document.getElementById("selectedCourse").textContent = "-";
+                document.getElementById("selectedCourseId").textContent = "-";
+                document.getElementById("selectedInfo").classList.add("show");
+                document.getElementById("unenrollBtn").disabled = true;
+            }
+
+            hideMessages();
+        }
+
+        /* ==========================
+           FETCH ENROLLED COURSES FOR STUDENT
+        ========================== */
+        async function loadEnrolledCourses() {
+            const studentId = document.getElementById("studentDropdown").value;
+
+            if (!studentId) return;
+
+            const tbody = document.getElementById("courseTableBody");
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">Loading enrolled courses...</td></tr>`;
+
+            const url = `http://127.0.0.1:8000/api/v1/students/${studentId}/courses`;
+
+            try {
+                const res = await fetch(url);
+                
+                if (!res.ok) throw new Error("Failed to load enrolled courses");
+                
+                const courses = await res.json();
+                renderCourseTable(courses);
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #d32f2f;">Error loading enrolled courses</td></tr>`;
+            }
+        }
+
+        /* ==========================
+           RENDER COURSE TABLE
+        ========================== */
+        function renderCourseTable(courses) {
+            const tbody = document.getElementById("courseTableBody");
+
+            if (!Array.isArray(courses) || courses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No course enrollments found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = courses.map(c => `
+                <tr>
+                    <td class="id-cell">${c.id}</td>
+                    <td>${c.name}</td>
+                    <td>${c.code || "-"}</td>
+                    <td><div class="truncate">${c.description || "-"}</div></td>
+                </tr>
+            `).join('');
+        }
+
+        /* ==========================
+           UNENROLL STUDENT
+        ========================== */
+        async function unenrollStudent() {
+            const courseId = document.getElementById("courseDropdown").value;
+            const studentId = document.getElementById("studentDropdown").value;
+            const studentName = document.getElementById("selectedStudent").textContent;
+            const courseName = document.getElementById("selectedCourse").textContent;
+
+            if (!courseId || !studentId) {
+                showError("Please select both student and course.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to unenroll ${studentName} from ${courseName}? This action cannot be undone.`)) {
+                return;
+            }
+
+            const unenrollBtn = document.getElementById("unenrollBtn");
+            unenrollBtn.disabled = true;
+            unenrollBtn.innerHTML = '<span>⏳</span> Unenrolling...';
+
+            const url = `http://127.0.0.1:8000/api/v1/students/unenroll/?course_id=${courseId}&student_id=${studentId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                const json = await response.json();
+
+                if (response.ok) {
+                    showSuccess(`Successfully unenrolled ${studentName} from ${courseName}!`);
+                    
+                    // Refresh enrolled courses list
+                    loadEnrolledCourses();
+                    
+                    // Reset course selection
+                    document.getElementById("courseDropdown").value = "";
+                    updateSelectedInfo();
+                } else {
+                    throw new Error(json.message || "Failed to unenroll student");
+                }
+
+            } catch (error) {
+                showError("Error: " + error.message);
+            } finally {
+                unenrollBtn.disabled = false;
+                unenrollBtn.innerHTML = '<span>❌</span> Unenroll Student From Selected Course';
+            }
+        }
+
+        /* ==========================
+           HELPER FUNCTIONS
+        ========================== */
+        function showError(message) {
+            const errorBox = document.getElementById("errorMessage");
+            errorBox.textContent = message;
+            errorBox.classList.add("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+
+        function showSuccess(message) {
+            const successBox = document.getElementById("successMessage");
+            successBox.textContent = message;
+            successBox.classList.add("show");
+            document.getElementById("errorMessage").classList.remove("show");
+        }
+
+        function hideMessages() {
+            document.getElementById("errorMessage").classList.remove("show");
+            document.getElementById("successMessage").classList.remove("show");
+        }
+    </script>
+</body>
+</html>

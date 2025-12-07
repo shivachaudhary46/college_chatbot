@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Attendance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1a1a1a;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1a1a1a;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select:hover, input[type="number"]:hover {
+            border-color: #bbb;
+        }
+
+        .selected-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 25px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .selected-box span {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .attendance-section {
+            margin: 25px 0;
+        }
+
+        .section-title {
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .attendance-table-container {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            color: #1a1a1a;
+            font-size: 13px;
+        }
+
+        th {
+            font-weight: 600;
+            border-bottom: 1px solid #e0e0e0;
+            color: #666;
+        }
+
+        tr {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f0f0f0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .response-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">📋</div>
+            <h1>Update Attendance</h1>
+            <p class="subtitle">Modify student attendance records</p>
+        </div>
+
+        <div class="form-group">
+            <label>👤 Student</label>
+            <select id="usernameDropdown">
+                <option>Loading...</option>
+            </select>
+        </div>
+
+        <div class="selected-box">
+            Selected: <span id="selectedUsername">None</span>
+        </div>
+
+        <div class="attendance-section">
+            <h3 class="section-title">Attendance Records</h3>
+            <div class="attendance-table-container">
+                <div id="attendanceTable">
+                    <p class="empty-state">Select a student to view records</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🆔 Attendance ID</label>
+            <input type="number" id="attendance_id" placeholder="Select from table above">
+        </div>
+
+        <div class="form-group">
+            <label>📅 Month</label>
+            <select id="month">
+                <option value="">Select Month</option>
+                <option value="Baisakh">Baisakh</option>
+                <option value="Jestha">Jestha</option>
+                <option value="Ashar">Ashar</option>
+                <option value="Shrawan">Shrawan</option>
+                <option value="Bhadra">Bhadra</option>
+                <option value="Ashwin">Ashwin</option>
+                <option value="Kartik">Kartik</option>
+                <option value="Mangsir">Mangsir</option>
+                <option value="Poush">Poush</option>
+                <option value="Magh">Magh</option>
+                <option value="Falgun">Falgun</option>
+                <option value="Chaitra">Chaitra</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>🎓 Semester</label>
+            <select id="semester">
+                <option value="">Select Semester</option>
+                <option value="1">1st Semester</option>
+                <option value="2">2nd Semester</option>
+                <option value="3">3rd Semester</option>
+                <option value="4">4th Semester</option>
+                <option value="5">5th Semester</option>
+                <option value="6">6th Semester</option>
+                <option value="7">7th Semester</option>
+                <option value="8">8th Semester</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>📊 Total Days</label>
+            <input type="number" id="total" placeholder="Enter total days">
+        </div>
+
+        <div class="form-group">
+            <label>✅ Status</label>
+            <select id="status">
+                <option value="">Select Status</option>
+                <option value="regular">Regular</option>
+                <option value="irregular">Irregular</option>
+                <option value="satisfactory">Satisfactory</option>
+                <option value="poor">Poor</option>
+                <option value="absent">Absent</option>
+                <option value="present">Present</option>
+            </select>
+        </div>
+
+        <button class="btn" onclick="updateAttendance()">Update Attendance</button>
+
+        <div class="response-box" id="responseBox"></div>
+
+        <div class="footer">
+            College Management System
+        </div>
+    </div>
+
+    <script>
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        async function loadUsers() {
+            const dropdown = document.getElementById("usernameDropdown");
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+                const users = await response.json();
+
+                dropdown.innerHTML = "";
+
+                users.forEach(user => {
+                    const option = document.createElement("option");
+                    option.value = user.id;
+                    option.textContent = user.full_name;
+                    dropdown.appendChild(option);
+                });
+
+            } catch (error) {
+                dropdown.innerHTML = "<option>Error loading users</option>";
+            }
+        }
+
+        document.getElementById("usernameDropdown").addEventListener("change", () => {
+            const userId = document.getElementById("usernameDropdown").value;
+            document.getElementById("selectedUsername").textContent = userId || "None";
+
+            if (userId) {
+                getAttendanceByUserID(userId);
+            }
+        });
+
+        loadUsers();
+
+        async function getAttendanceByUserID(userId) {
+            const url = `http://127.0.0.1:8000/api/v1/attendance/${userId}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                renderAttendanceTable(data);
+
+            } catch (error) {
+                document.getElementById("attendanceTable").innerHTML =
+                    "<p class='empty-state'>Error loading attendance</p>";
+            }
+        }
+
+        function renderAttendanceTable(records) {
+            if (!Array.isArray(records) || records.length === 0) {
+                document.getElementById("attendanceTable").innerHTML =
+                    "<p class='empty-state'>No attendance records found</p>";
+                return;
+            }
+
+            let table = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Month</th>
+                            <th>Sem</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach(r => {
+                table += `
+                    <tr onclick="selectAttendance(${r.id}, '${r.month}', '${r.semester}', ${r.total}, '${r.attendee_status}')">
+                        <td>${r.id}</td>
+                        <td>${r.month}</td>
+                        <td>${r.semester}</td>
+                        <td>${r.total}</td>
+                        <td>${r.attendee_status}</td>
+                    </tr>
+                `;
+            });
+
+            table += "</tbody></table>";
+
+            document.getElementById("attendanceTable").innerHTML = table;
+        }
+
+        function selectAttendance(id, month, semester, total, status) {
+            document.getElementById('attendance_id').value = id;
+            document.getElementById('month').value = month;
+            document.getElementById('semester').value = semester;
+            document.getElementById('total').value = total;
+            document.getElementById('status').value = status;
+        }
+
+        async function updateAttendance() {
+            const attendanceId = document.getElementById("attendance_id").value;
+            const month = document.getElementById("month").value;
+            const semester = document.getElementById("semester").value;
+            const total = document.getElementById("total").value;
+            const attendeeStatus = document.getElementById("status").value;
+            const token = getAuthToken();
+            const responseBox = document.getElementById("responseBox");
+
+            if (!attendanceId) {
+                responseBox.textContent = "Error: Please select an attendance record from the table";
+                responseBox.classList.add('show');
+                return;
+            }
+
+            const url = `http://127.0.0.1:8000/api/v1/attendance/${attendanceId}`;
+
+            const bodyData = {
+                month: month,
+                semester: semester,
+                total: total ? Number(total) : 0,
+                attendee_status: attendeeStatus
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                const json = await response.json();
+                responseBox.textContent = JSON.stringify(json, null, 2);
+                responseBox.classList.add('show');
+
+                // Reload attendance records after update
+                if (response.ok) {
+                    const userId = document.getElementById("usernameDropdown").value;
+                    if (userId) {
+                        setTimeout(() => getAttendanceByUserID(userId), 1000);
+                    }
+                }
+
+            } catch (error) {
+                responseBox.textContent = "Error: " + error.message;
+                responseBox.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>

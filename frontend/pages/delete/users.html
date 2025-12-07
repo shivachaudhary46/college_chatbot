@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete User</title>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script>
+        // Style constants
+        const styles = {
+            container: 'max-width: 600px; margin: 40px auto; padding: 30px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',
+            title: 'font-size: 24px; font-weight: 600; color: #1a1a1a; margin: 0 0 8px 0;',
+            subtitle: 'font-size: 14px; color: #666; margin: 0 0 24px 0;',
+            endpoint: 'background: #f5f5f5; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-family: "Courier New", monospace; font-size: 14px; color: #d73a49; border-left: 4px solid #d73a49;',
+            formGroup: 'margin-bottom: 20px;',
+            label: 'display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 8px;',
+            input: 'width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; transition: border-color 0.2s;',
+            inputFocus: 'border-color: #d73a49; outline: none;',
+            buttonContainer: 'display: flex; gap: 12px; margin-top: 24px;',
+            deleteButton: 'flex: 1; padding: 12px 24px; background: #d73a49; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;',
+            deleteButtonHover: 'background: #cb2431;',
+            cancelButton: 'flex: 1; padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;',
+            cancelButtonHover: 'background: #e5e5e5;',
+            warning: 'background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; color: #856404; font-size: 14px;',
+            result: 'margin-top: 20px; padding: 12px 16px; border-radius: 6px; font-size: 14px;',
+            resultSuccess: 'background: #d4edda; border: 1px solid #c3e6cb; color: #155724;',
+            resultError: 'background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;'
+        };
+
+        // Create form HTML
+        const container = document.getElementById('container');
+        container.style.cssText = styles.container;
+        
+        container.innerHTML = `
+            <h2 style="${styles.title}">Delete User By Username</h2>
+            <p style="${styles.subtitle}">Remove a user from the system</p>
+            
+            <div style="${styles.endpoint}">
+                <strong>DELETE</strong> /api/v1/users/{username}
+            </div>
+
+            <div style="${styles.warning}">
+                <strong>⚠️ Warning:</strong> This action cannot be undone. The user and all associated data will be permanently deleted.
+            </div>
+
+            <div style="${styles.formGroup}">
+                <label style="${styles.label}">Username *</label>
+                <input id="username" type="text" placeholder="johndoe" style="${styles.input}" />
+            </div>
+
+            <div style="${styles.buttonContainer}">
+                <button id="cancelBtn" style="${styles.cancelButton}">Cancel</button>
+                <button id="deleteBtn" style="${styles.deleteButton}">Delete User</button>
+            </div>
+
+            <div id="result" style="display: none;"></div>
+        `;
+
+        // Get elements
+        const usernameInput = document.getElementById('username');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const resultDiv = document.getElementById('result');
+
+        // Add focus effect to input
+        usernameInput.addEventListener('focus', function() {
+            this.style.borderColor = '#d73a49';
+            this.style.outline = 'none';
+        });
+
+        usernameInput.addEventListener('blur', function() {
+            this.style.borderColor = '#ddd';
+        });
+
+        // Add hover effects to buttons
+        deleteBtn.addEventListener('mouseenter', function() {
+            this.style.background = '#cb2431';
+        });
+
+        deleteBtn.addEventListener('mouseleave', function() {
+            this.style.background = '#d73a49';
+        });
+
+        cancelBtn.addEventListener('mouseenter', function() {
+            this.style.background = '#e5e5e5';
+        });
+
+        cancelBtn.addEventListener('mouseleave', function() {
+            this.style.background = '#f5f5f5';
+        });
+
+        // Delete button handler
+        deleteBtn.addEventListener('click', async function() {
+            const username = usernameInput.value.trim();
+
+            // Validation
+            if (!username) {
+                showResult('Please enter a username', 'error');
+                return;
+            }
+
+            // Confirmation
+            if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            // Disable button during request
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+            deleteBtn.style.opacity = '0.6';
+            deleteBtn.style.cursor = 'not-allowed';
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/v1/users/${encodeURIComponent(username)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`User "${username}" has been successfully deleted`, 'success');
+                    usernameInput.value = '';
+                } else {
+                    showResult(data.message || 'Failed to delete user', 'error');
+                }
+            } catch (error) {
+                showResult('Network error: ' + error.message, 'error');
+            } finally {
+                // Re-enable button
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete User';
+                deleteBtn.style.opacity = '1';
+                deleteBtn.style.cursor = 'pointer';
+            }
+        });
+
+        // Cancel button handler
+        cancelBtn.addEventListener('click', function() {
+            usernameInput.value = '';
+            resultDiv.style.display = 'none';
+        });
+
+        // Show result message
+        function showResult(message, type) {
+            resultDiv.style.display = 'block';
+            resultDiv.style.cssText = styles.result + '; ' + (type === 'success' ? styles.resultSuccess : styles.resultError);
+            resultDiv.textContent = message;
+        }
+
+        // Allow Enter key to submit
+        usernameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                deleteBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

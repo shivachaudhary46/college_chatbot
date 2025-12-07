@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Assignment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #e9f1ff, #f6fbff);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Card */
+.container {
+    background: #ffffff;
+    width: 420px;
+    max-width: 95%;
+    padding: 34px 30px;
+    border-radius: 18px;
+    box-shadow: 0px 18px 35px rgba(0,0,0,0.08);
+    animation: fadeIn .5s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(20px)}
+    to {opacity:1; transform:translateY(0)}
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.header h2 {
+    margin: 0;
+    font-size: 26px;
+    color: #2c3e50;
+}
+.header p {
+    font-size: 13px;
+    color: #888;
+    margin-top: 5px;
+}
+
+/* Form fields */
+.form-group {
+    margin-bottom: 16px;
+}
+label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    display: block;
+    margin-bottom: 6px;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 11px 13px;
+    border-radius: 10px;
+    border: 1px solid #e2e6ef;
+    outline: none;
+    font-size: 14px;
+    transition: 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #6a8dff;
+    box-shadow: 0 0 0 2px rgba(106,141,255,.2);
+}
+
+textarea {
+    min-height: 90px;
+}
+
+/* Selected course box */
+.selected-info {
+    background: linear-gradient(135deg,#eef5ff,#f7fbff);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #556;
+    margin-bottom: 16px;
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    background: linear-gradient(135deg,#6a8dff,#6fd1c8);
+    color: white;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+button:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+}
+
+/* Response box */
+.response-section {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e6ecf4;
+    font-size: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.footer {
+    text-align: center;
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h2>📝 Assignment</h2>
+        <p>Create & assign tasks for students</p>
+    </div>
+
+    <div class="form-group">
+        <label>📚 Course</label>
+        <select id="courseDropdown">
+            <option>Loading...</option>
+        </select>
+    </div>
+
+    <div class="selected-info" id="selectedCourse">
+        Selected: None
+    </div>
+
+    <div class="form-group">
+        <label>✏️ Assignment Title</label>
+        <input type="text" id="title" placeholder="Enter title">
+    </div>
+
+    <div class="form-group">
+        <label>📄 Description</label>
+        <textarea id="description" placeholder="Instructions & details..."></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>📅 Due Date</label>
+        <input type="datetime-local" id="due_date">
+    </div>
+
+    <button onclick="createAssignment()">Submit Assignment</button>
+
+    <div class="response-section">
+        <pre id="responseBox">Waiting for submission...</pre>
+    </div>
+
+    <div class="footer">
+        College Management System
+    </div>
+
+</div>
+
+
+<script>
+
+// ✅ SAME SCRIPT - unchanged except selected text style
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getAuthToken()}`
+    };
+}
+
+async function checkAuth() {
+    const token = getAuthToken();
+    if (!token) {
+        window.location.href = 'teacher_login.html';
+        return null;
+    }
+
+    const response = await fetch(`http://127.0.0.1:8000/api/v1/me`, {
+        headers: getAuthHeaders()
+    });
+
+    const user = await response.json();
+    return user;
+}
+
+async function loadCourses() {
+    const user = await checkAuth();
+    const dropdown = document.getElementById("courseDropdown");
+
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/api/v1/teachers/${user.id}/courses`, {
+            headers: getAuthHeaders()
+        });
+
+        const courses = await response.json();
+        dropdown.innerHTML = "";
+
+        courses.forEach(course => {
+            const option = document.createElement("option");
+            option.value = course.id;
+            option.textContent = course.name;
+            dropdown.appendChild(option);
+        });
+
+    } catch (error) {
+        dropdown.innerHTML = "<option>Error loading</option>";
+    }
+}
+
+document.getElementById("courseDropdown").addEventListener("change", (e) => {
+    const selectedId = e.target.value;
+    const selectedText = e.target.options[e.target.selectedIndex].text;
+
+    document.getElementById("selectedCourse").innerHTML =
+        `<b>Course:</b> ${selectedText}<br><b>ID:</b> ${selectedId}`;
+});
+
+
+loadCourses();
+
+
+async function createAssignment() {
+    const courseId = document.getElementById("courseDropdown").value;
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const dueDate = document.getElementById("due_date").value;
+
+    const responseBox = document.getElementById("responseBox");
+    responseBox.textContent = "Submitting...";
+
+    const url = `http://127.0.0.1:8000/api/v1/courses/${courseId}/assignments/`;
+
+    const bodyData = { title, description, due_date: dueDate };
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(bodyData)
+    });
+
+    const json = await response.json();
+    responseBox.textContent = JSON.stringify(json, null, 2);
+}
+
+</script>
+
+</body>
+</html>

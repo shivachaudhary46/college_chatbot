@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Notice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f5f5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 48px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .trash-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-icon {
+            color: #f57c00;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr.selected {
+            background: #e3f2fd;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .label-icon {
+            color: #5e35b1;
+            font-size: 16px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #5e35b1;
+            background: white;
+        }
+
+        .delete-button {
+            width: 100%;
+            padding: 16px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-button:hover {
+            background: #c62828;
+        }
+
+        .delete-button:active {
+            transform: scale(0.98);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .id-cell {
+            font-weight: 600;
+            color: #5e35b1;
+        }
+
+        .truncate {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="trash-icon">🗑️</div>
+            <h1>Delete Notice</h1>
+            <p class="subtitle">Remove notice from the system</p>
+        </div>
+
+        <div class="warning-box">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">This action cannot be undone. Please proceed with caution.</div>
+        </div>
+
+        <div class="section-title">
+            Your Notices
+        </div>
+
+        <div class="table-container">
+            <table id="noticeTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Title</th>
+                        <th>Content</th>
+                        <th style="width: 120px;">Target Batch</th>
+                        <th style="width: 140px;">Target Program</th>
+                        <th style="width: 100px;">Course ID</th>
+                    </tr>
+                </thead>
+                <tbody id="noticeTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            Loading notices...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-section">
+            <label>
+                <span class="label-icon">🆔</span>
+                Notice ID
+            </label>
+            <input type="text" id="notice_id" placeholder="Select from table above" readonly>
+        </div>
+
+        <button class="delete-button" onclick="deleteNotice()">Delete Notice</button>
+    </div>
+
+    <script>
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || 'demo-token-12345';
+        }
+
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + getAuthToken()
+            };
+        }
+
+        async function getNotice() {
+            const url = `http://127.0.0.1:8000/api/v1/notices/`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                });
+
+                const notices = await response.json();
+                renderNoticeTable(notices);
+
+            } catch (error) {
+                document.getElementById("noticeTableBody").innerHTML =
+                    `<tr><td colspan="6" style="text-align: center; padding: 40px; color: #d32f2f;">
+                        Error loading notices: ${error.message}
+                    </td></tr>`;
+            }
+        }
+
+        function renderNoticeTable(records) {
+            const tbody = document.getElementById("noticeTableBody");
+            
+            if (!Array.isArray(records) || records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            No notices found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = records.map(n => `
+                <tr onclick="selectNotice(${n.id}, this)">
+                    <td class="id-cell">${n.id}</td>
+                    <td><div class="truncate">${n.title || '-'}</div></td>
+                    <td><div class="truncate">${n.content || '-'}</div></td>
+                    <td>${n.target_batch || '-'}</td>
+                    <td>${n.target_program || '-'}</td>
+                    <td>${n.course_id || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function selectNotice(id, row) {
+            document.querySelectorAll('#noticeTableBody tr').forEach(tr => {
+                tr.classList.remove('selected');
+            });
+            
+            row.classList.add('selected');
+            document.getElementById('notice_id').value = id;
+        }
+
+        window.onload = getNotice;
+
+        async function deleteNotice() {
+            const noticeId = document.getElementById("notice_id").value;
+
+            if (!noticeId) {
+                alert("Please select a notice from the table above.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete notice #${noticeId}? This action cannot be undone.`)) {
+                return;
+            }
+
+            const url = `http://127.0.0.1:8000/api/v1/notices/${noticeId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": "Bearer " + getAuthToken()
+                    }
+                });
+
+                const json = await response.json();
+
+                if (response.ok) {
+                    alert("Notice deleted successfully!");
+                    document.getElementById('notice_id').value = '';
+                    getNotice();
+                } else {
+                    alert("Error: " + (json.message || "Failed to delete notice"));
+                }
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+myenv/
+.myenv/
+
+# Environment files
+*.env
+
+# Logs
+*.log
+
+# Node
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Optional: ignore large binaries you don’t need
+*.pdf

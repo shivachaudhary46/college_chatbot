@@ -1,0 +1,42 @@
+# Core Framework (install first)
+pydantic
+fastapi[standard]
+uvicorn
+python-dotenv
+python-multipart
+
+# LangChain Core (install before integrations)
+langchain-core
+langchain-community
+langchain
+
+# AI Integrations (install after langchain-core)
+langchain-google-genai
+langchain-pinecone
+langchain-groq
+
+# Vector Database
+pinecone-client
+
+# ML & Embeddings
+torch
+sentence-transformers
+transformers
+
+# Web Tools
+crawl4ai
+playwright
+duckduckgo-search
+
+# Database
+sqlmodel
+sqlalchemy
+aiosqlite
+
+# Security & Auth
+pwdlib[argon2]
+PyJWT
+
+# Utilities
+python-jose
+aiofiles

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Course</title>
+
+<style>
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #eef3fd, #e8f7f4);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.card {
+    background: white;
+    width: 420px;
+    border-radius: 22px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.08);
+    padding: 30px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header span {
+    font-size: 40px;
+}
+
+.header h2 {
+    margin: 6px 0;
+    font-weight: 700;
+}
+
+.header small {
+    color: #777;
+}
+
+label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+.input {
+    margin-top: 6px;
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid #e3e7ee;
+    font-size: 15px;
+    outline: none;
+}
+
+.input:focus {
+    border-color: #7b8cff;
+    box-shadow: 0 0 0 3px rgba(123,140,255,.15);
+}
+
+.select {
+    appearance: none;
+    background: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='gray'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M6%209l6%206%206-6'/%3E%3C/svg%3E") no-repeat right 15px center;
+    background-size: 16px;
+}
+
+.selected {
+    margin-top: 10px;
+    background: linear-gradient(135deg,#eef5ff,#ebfff9);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.selected b {
+    color: #6c7cff;
+}
+
+button {
+    width: 100%;
+    margin-top: 25px;
+    background: linear-gradient(90deg,#7a8cff,#64c6b7);
+    border: none;
+    border-radius: 13px;
+    padding: 14px;
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: .9;
+}
+
+.response {
+    margin-top: 15px;
+    background: #f7f9fc;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.footer {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 13px;
+    color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<div class="header">
+    <span>📘</span>
+    <h2>Create Course</h2>
+    <small>College course creation panel</small>
+</div>
+
+<label>📚 Course Name</label>
+<input class="input" id="course_name" placeholder="Enter course name">
+
+<label>🏷 Course Code</label>
+<input class="input" id="course_code" placeholder="Enter code">
+
+<label>👨‍🏫 Teacher</label>
+<select class="input select" id="teacher_id">
+    <option value="">Select Teacher</option>
+</select>
+
+<div class="selected">
+    Selected: <b id="selectedUsername">None</b>
+</div>
+
+<button onclick="createCourse()">Create Course</button>
+
+<div class="response">
+<pre id="responseBox">Waiting...</pre>
+</div>
+
+<div class="footer">College Management System</div>
+
+</div>
+
+<script>
+function getAuthToken() {
+    return localStorage.getItem("authToken");
+}
+
+async function loadUsers() {
+    const select = document.getElementById("teacher_id");
+
+    const res = await fetch("http://127.0.0.1:8000/api/v1/users/?role=teacher");
+    const users = await res.json();
+
+    users.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = u.full_name;
+        select.appendChild(opt);
+    });
+}
+
+document.getElementById("teacher_id").addEventListener("change", function() {
+    const label = this.options[this.selectedIndex].text;
+    document.getElementById("selectedUsername").textContent =
+        this.value ? label : "None";
+});
+
+
+loadUsers();
+
+
+async function createCourse() {
+    const name = course_name.value;
+    const code = course_code.value;
+    const teacher = teacher_id.value;
+    const token = getAuthToken();
+
+    if (!name || !code || !teacher) {
+        responseBox.textContent = "Please fill all fields.";
+        return;
+    }
+
+    const res = await fetch("http://127.0.0.1:8000/api/v1/courses/", {
+        method: "POST",
+        headers: {
+            "Content-Type":"application/json",
+            "Authorization":"Bearer " + token
+        },
+        body: JSON.stringify({
+            name,
+            code,
+            teacher_id: Number(teacher)
+        })
+    });
+
+    const data = await res.json();
+    responseBox.textContent = JSON.stringify(data,null,2);
+}
+</script>
+
+</body>
+</html>

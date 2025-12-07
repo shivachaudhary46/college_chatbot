@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Mark</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #e8f1ff, #f5fbff);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.card{
+    background:white;
+    width:420px;
+    padding:35px;
+    border-radius:18px;
+    box-shadow:0 25px 50px rgba(0,0,0,0.08);
+    text-align:center;
+}
+
+h2{
+    font-size:26px;
+    color:#1f2937;
+    margin-bottom:5px;
+}
+
+.subtitle{
+    font-size:14px;
+    color:#6b7280;
+    margin-bottom:25px;
+}
+
+.form-group{
+    text-align:left;
+    margin-bottom:16px;
+}
+
+label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:600;
+    color:#374151;
+    margin-bottom:6px;
+}
+
+select,input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1.5px solid #e5e7eb;
+    font-size:14px;
+    outline:none;
+    transition:.2s;
+}
+
+select:focus,input:focus{
+    border-color:#6d8dff;
+    box-shadow:0 0 0 3px rgba(100,120,255,0.1);
+}
+
+.info-box{
+    margin:10px 0 14px;
+    background: linear-gradient(90deg, #eff6ff, #f0fdf4);
+    padding:10px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:13px;
+    color:#2563eb;
+}
+
+.course-box{
+    margin-top:8px;
+    background:#f9fafb;
+    padding:10px;
+    border-radius:8px;
+    font-size:12px;
+    color:#374151;
+    white-space:pre-line;
+    border:1px solid #e5e7eb;
+}
+
+button{
+    margin-top:14px;
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(90deg,#7c8cff,#64c7b8);
+    color:white;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+#result{
+    margin-top:18px;
+    text-align:left;
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    padding:10px;
+    font-size:12px;
+    border-radius:10px;
+    max-height:150px;
+    overflow:auto;
+}
+
+.footer{
+    margin-top:15px;
+    font-size:12px;
+    color:#6b7280;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>📊 Mark Entry</h2>
+    <div class="subtitle">Add student academic record</div>
+
+    <div class="form-group">
+        <label>👤 Student</label>
+        <select id="usernameDropdown">
+            <option>Loading...</option>
+        </select>
+    </div>
+
+    <div class="info-box">
+        Selected: <span id="selectedUsername">None</span>
+    </div>
+
+    <div class="form-group">
+        <label>🎓 Semester</label>
+        <select id="semester">
+            <option value="">Select Semester</option>
+            <option value="1">1st Semester</option>
+            <option value="2">2nd Semester</option>
+            <option value="3">3rd Semester</option>
+            <option value="4">4th Semester</option>
+            <option value="5">5th Semester</option>
+            <option value="6">6th Semester</option>
+            <option value="7">7th Semester</option>
+            <option value="8">8th Semester</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>📚 Course</label>
+        <select id="courseDropdown">
+            <option>Loading...</option>
+        </select>
+        <div id="selectedCourse" class="course-box">No course selected</div>
+    </div>
+
+    <div class="form-group">
+        <label>🔢 Total Marks</label>
+        <input type="number" id="total_mark" placeholder="Enter marks">
+    </div>
+
+    <div class="form-group">
+        <label>🏆 Grade</label>
+        <select id="grade">
+            <option value="">Select Grade</option>
+            <option>A</option>
+            <option>B</option>
+            <option>C</option>
+            <option>D</option>
+            <option>E</option>
+            <option>F</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>📅 Exam Date</label>
+        <input type="datetime-local" id="exam_date">
+    </div>
+
+    <button onclick="addMark()">Submit Mark</button>
+
+    <pre id="result">Waiting...</pre>
+
+    <div class="footer">College Management System</div>
+</div>
+
+
+<script>
+function getAuthToken() {
+    return localStorage.getItem("authToken");
+}
+
+function getAuthHeaders(){
+    return {
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+getAuthToken()
+    };
+}
+
+async function loadUsers(){
+    const dropdown=document.getElementById("usernameDropdown");
+    const res=await fetch("http://127.0.0.1:8000/api/v1/users/?role=student");
+    const users=await res.json();
+    dropdown.innerHTML="";
+    users.forEach(u=>{
+        let opt=document.createElement("option");
+        opt.value=u.username;
+        opt.textContent=u.full_name;
+        dropdown.appendChild(opt);
+    });
+}
+
+usernameDropdown.addEventListener("change",()=>{
+    selectedUsername.textContent=usernameDropdown.value || "None";
+});
+
+async function loadCourses(){
+    const me=await fetch("http://127.0.0.1:8000/api/v1/me",{headers:getAuthHeaders()});
+    const user=await me.json();
+
+    const dropdown=document.getElementById("courseDropdown");
+    const res=await fetch(`http://127.0.0.1:8000/api/v1/teachers/${user.id}/courses`,{headers:getAuthHeaders()});
+    const courses=await res.json();
+
+    dropdown.innerHTML="";
+    courses.forEach(c=>{
+        let opt=document.createElement("option");
+        opt.value=c.name;
+        opt.dataset.id=c.id;
+        opt.textContent=c.name;
+        dropdown.appendChild(opt);
+    });
+}
+
+courseDropdown.addEventListener("change",e=>{
+    selectedCourse.textContent=`Course: ${e.target.value}`;
+});
+
+async function addMark(){
+    const body={
+        semester:semester.value,
+        subject:courseDropdown.value,
+        total_marks:Number(total_mark.value),
+        grade:grade.value,
+        exam_date:exam_date.value
+    };
+
+    if(Object.values(body).includes("")){
+        result.textContent="All fields required!";
+        return;
+    }
+
+    result.textContent="Submitting...";
+
+    const res=await fetch(`http://127.0.0.1:8000/api/v1/users/${usernameDropdown.value}/marks/`,{
+        method:"POST",
+        headers:getAuthHeaders(),
+        body:JSON.stringify(body)
+    });
+
+    const data=await res.json();
+    result.textContent=JSON.stringify(data,null,2);
+}
+
+loadUsers();
+loadCourses();
+</script>
+
+</body>
+</html>

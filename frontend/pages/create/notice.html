@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Notice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1a1a1a;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1a1a1a;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input:hover,
+        textarea:hover,
+        select:hover {
+            border-color: #bbb;
+        }
+
+        .selected-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 25px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .selected-box b {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+        }
+
+        .response-box.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .response-box.error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .response-box.loading {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: #999;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .required {
+            color: #f44336;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #1565c0;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">📢</div>
+            <h1>Create Notice</h1>
+            <p class="subtitle">Post an announcement to students</p>
+        </div>
+
+        <div class="info-box">
+            <span class="info-icon">ℹ️</span>
+            <span>Fill out all fields to create a notice for your course</span>
+        </div>
+
+        <div class="form-group">
+            <label>✏️ Title <span class="required">*</span></label>
+            <input type="text" id="title" placeholder="Enter notice title" maxlength="200">
+            <div class="char-count">
+                <span id="titleCount">0</span>/200
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📄 Content <span class="required">*</span></label>
+            <textarea id="content" placeholder="Write notice here..." maxlength="2000"></textarea>
+            <div class="char-count">
+                <span id="contentCount">0</span>/2000
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🎓 Batch <span class="required">*</span></label>
+            <input type="text" id="batch" placeholder="e.g. 2025" maxlength="4">
+        </div>
+
+        <div class="form-group">
+            <label>📘 Program <span class="required">*</span></label>
+            <select id="program">
+                <option value="">Select program</option>
+                <option value="bba">BBA</option>
+                <option value="bca">BCA</option>
+                <option value="bsccsit">BSc CSIT</option>
+                <option value="bbs">BBS</option>
+                <option value="ba">BA</option>
+                <option value="bbm">BBM</option>
+                <option value="bsw">BASW</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>📚 Course <span class="required">*</span></label>
+            <select id="courseDropdown">
+                <option>Loading...</option>
+            </select>
+        </div>
+
+        <div class="selected-box" id="selectedCourse">
+            Selected: <b>None</b>
+        </div>
+
+        <button class="btn" onclick="createNotice()" id="submitBtn">Submit Notice</button>
+
+        <div class="response-box" id="responseBox"></div>
+
+        <div class="footer">
+            College Management System
+        </div>
+    </div>
+
+    <script>
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            };
+        }
+
+        async function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = 'teacher_login.html';
+                return null;
+            }
+
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/me`, {
+                headers: getAuthHeaders()
+            });
+
+            const user = await response.json();
+            return user;
+        }
+
+        async function loadCourses() {
+            const user = await checkAuth();
+            const dropdown = document.getElementById("courseDropdown");
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/v1/teachers/${user.id}/courses`, {
+                    headers: getAuthHeaders()
+                });
+
+                const courses = await response.json();
+                dropdown.innerHTML = "";
+
+                if (courses.length === 0) {
+                    dropdown.innerHTML = "<option>No courses found</option>";
+                    return;
+                }
+
+                courses.forEach(course => {
+                    const option = document.createElement("option");
+                    option.value = course.id;
+                    option.textContent = course.name;
+                    dropdown.appendChild(option);
+                });
+
+                // Auto-select first course
+                if (courses.length > 0) {
+                    updateSelectedCourse();
+                }
+
+            } catch (error) {
+                dropdown.innerHTML = "<option>Error loading courses</option>";
+            }
+        }
+
+        function updateSelectedCourse() {
+            const dropdown = document.getElementById("courseDropdown");
+            const name = dropdown.options[dropdown.selectedIndex].text;
+            const id = dropdown.value;
+
+            if (id && name !== "Loading..." && name !== "No courses found" && name !== "Error loading courses") {
+                document.getElementById("selectedCourse").innerHTML =
+                    `<b>Course:</b> ${name}<br><b>ID:</b> ${id}`;
+            } else {
+                document.getElementById("selectedCourse").innerHTML = "Selected: <b>None</b>";
+            }
+        }
+
+        document.getElementById("courseDropdown").addEventListener("change", updateSelectedCourse);
+
+        async function createNotice() {
+            const title = document.getElementById("title").value.trim();
+            const content = document.getElementById("content").value.trim();
+            const targetBatch = document.getElementById("batch").value.trim();
+            const targetProgram = document.getElementById("program").value;
+            const courseId = Number(document.getElementById("courseDropdown").value);
+
+            const responseBox = document.getElementById("responseBox");
+            const submitBtn = document.getElementById("submitBtn");
+
+            // Validation
+            if (!title) {
+                responseBox.textContent = "Error: Title is required";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            if (!content) {
+                responseBox.textContent = "Error: Content is required";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            if (!targetBatch) {
+                responseBox.textContent = "Error: Batch is required";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            if (!targetProgram) {
+                responseBox.textContent = "Error: Program is required";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            if (!courseId || isNaN(courseId)) {
+                responseBox.textContent = "Error: Please select a valid course";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Submitting...";
+            responseBox.textContent = "Submitting notice...";
+            responseBox.className = 'response-box show loading';
+
+            const bodyData = {
+                title,
+                content,
+                target_batch: targetBatch,
+                target_program: targetProgram,
+                course_id: courseId
+            };
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/v1/notices/", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(bodyData)
+                });
+
+                const json = await response.json();
+
+                if (response.ok) {
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                    responseBox.className = 'response-box show success';
+                    
+                    // Clear form on success
+                    document.getElementById("title").value = "";
+                    document.getElementById("content").value = "";
+                    document.getElementById("batch").value = "";
+                    document.getElementById("program").value = "";
+                    updateCharCount('title', 'titleCount', 200);
+                    updateCharCount('content', 'contentCount', 2000);
+                } else {
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                    responseBox.className = 'response-box show error';
+                }
+
+            } catch (error) {
+                responseBox.textContent = "Error: " + error.message;
+                responseBox.className = 'response-box show error';
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submit Notice";
+            }
+        }
+
+        // Character count functionality
+        function updateCharCount(inputId, countId, maxLength) {
+            const input = document.getElementById(inputId);
+            const count = document.getElementById(countId);
+            count.textContent = input.value.length;
+            
+            if (input.value.length >= maxLength) {
+                count.style.color = '#f44336';
+            } else {
+                count.style.color = '#999';
+            }
+        }
+
+        document.getElementById('title').addEventListener('input', function() {
+            updateCharCount('title', 'titleCount', 200);
+        });
+
+        document.getElementById('content').addEventListener('input', function() {
+            updateCharCount('content', 'contentCount', 2000);
+        });
+
+        // Load courses on page load
+        loadCourses();
+    </script>
+</body>
+</html>

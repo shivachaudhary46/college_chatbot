@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Assignment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .assignments-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .assignment-table-container {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            color: #1a1a1a;
+            font-size: 13px;
+        }
+
+        th {
+            font-weight: 600;
+            border-bottom: 1px solid #e0e0e0;
+            color: #666;
+        }
+
+        tr {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f0f0f0;
+        }
+
+        tbody tr.selected {
+            background: #e3f2fd;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1a1a1a;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="datetime-local"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1a1a1a;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input:hover,
+        textarea:hover {
+            border-color: #bbb;
+        }
+
+        input[readonly] {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .response-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+        }
+
+        .response-box.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .response-box.error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: #999;
+            text-align: right;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">📝</div>
+            <h1>Update Assignment</h1>
+            <p class="subtitle">Modify assignment details</p>
+        </div>
+
+        <div class="assignments-section">
+            <h3 class="section-title">Your Assignments</h3>
+            <div class="assignment-table-container">
+                <div id="assignmentTable">
+                    <p class="loading">Loading assignments...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🆔 Assignment ID</label>
+            <input type="number" id="assignment_id" placeholder="Select from table above" readonly>
+        </div>
+
+        <div class="form-group">
+            <label>📌 Title</label>
+            <input type="text" id="title" placeholder="Enter assignment title" maxlength="200">
+            <div class="char-count">
+                <span id="titleCount">0</span>/200
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📄 Description</label>
+            <textarea id="description" placeholder="Enter assignment description" maxlength="1000"></textarea>
+            <div class="char-count">
+                <span id="descCount">0</span>/1000
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📅 Due Date</label>
+            <input type="datetime-local" id="due_date">
+        </div>
+
+        <button class="btn" onclick="updateAssignment()">Update Assignment</button>
+
+        <div class="response-box" id="responseBox"></div>
+
+        <div class="footer">
+            College Management System
+        </div>
+    </div>
+
+    <script>
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            };
+        }
+
+        async function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = 'teacher_login.html';
+                return null;
+            }
+
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/me`, {
+                headers: getAuthHeaders()
+            });
+
+            const user = await response.json();
+            return user;
+        }
+
+        async function getAssignmentByTeacherId() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            const url = `http://127.0.0.1:8000/api/v1/assignment/teacher/${user.id}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+                const assignments = await response.json();
+
+                renderAssignmentTable(assignments);
+
+            } catch (error) {
+                document.getElementById("assignmentTable").innerHTML =
+                    "<p class='empty-state'>Error loading assignments</p>";
+            }
+        }
+
+        function renderAssignmentTable(records) {
+            if (!Array.isArray(records) || records.length === 0) {
+                document.getElementById("assignmentTable").innerHTML =
+                    "<p class='empty-state'>No assignments found</p>";
+                return;
+            }
+
+            let table = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach(a => {
+                const dueDate = new Date(a.due_date).toLocaleString();
+                const description = a.description.length > 30 
+                    ? a.description.substring(0, 30) + '...' 
+                    : a.description;
+
+                table += `
+                    <tr onclick="selectAssignment(${a.id}, '${a.title.replace(/'/g, "\\'")}', '${a.description.replace(/'/g, "\\'")}', '${a.due_date}')">
+                        <td>${a.id}</td>
+                        <td>${a.title}</td>
+                        <td>${description}</td>
+                        <td>${dueDate}</td>
+                    </tr>
+                `;
+            });
+
+            table += "</tbody></table>";
+
+            document.getElementById("assignmentTable").innerHTML = table;
+        }
+
+        function selectAssignment(id, title, description, dueDate) {
+            document.getElementById('assignment_id').value = id;
+            document.getElementById('title').value = title;
+            document.getElementById('description').value = description;
+            
+            // Format datetime for datetime-local input
+            const date = new Date(dueDate);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('due_date').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+            // Update character counts
+            updateCharCount('title', 'titleCount', 200);
+            updateCharCount('description', 'descCount', 1000);
+
+            // Highlight selected row
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => row.classList.remove('selected'));
+            event.target.parentElement.classList.add('selected');
+        }
+
+        async function updateAssignment() {
+            const assignmentId = document.getElementById("assignment_id").value;
+            const title = document.getElementById("title").value;
+            const description = document.getElementById("description").value;
+            const dueDate = document.getElementById("due_date").value;
+            const token = getAuthToken();
+            const responseBox = document.getElementById("responseBox");
+
+            if (!assignmentId) {
+                responseBox.textContent = "Error: Please select an assignment from the table";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            if (!title || !description || !dueDate) {
+                responseBox.textContent = "Error: All fields are required";
+                responseBox.className = 'response-box show error';
+                return;
+            }
+
+            const url = `http://127.0.0.1:8000/api/v1/assignments/${assignmentId}`;
+
+            const bodyData = {
+                title: title,
+                description: description,
+                due_date: dueDate
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                const json = await response.json();
+                
+                if (response.ok) {
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                    responseBox.className = 'response-box show success';
+                    
+                    // Refresh assignments list
+                    setTimeout(() => getAssignmentByTeacherId(), 1000);
+                } else {
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                    responseBox.className = 'response-box show error';
+                }
+
+            } catch (error) {
+                responseBox.textContent = "Error: " + error.message;
+                responseBox.className = 'response-box show error';
+            }
+        }
+
+        // Character count functionality
+        function updateCharCount(inputId, countId, maxLength) {
+            const input = document.getElementById(inputId);
+            const count = document.getElementById(countId);
+            count.textContent = input.value.length;
+            
+            if (input.value.length >= maxLength) {
+                count.style.color = '#f44336';
+            } else {
+                count.style.color = '#999';
+            }
+        }
+
+        document.getElementById('title').addEventListener('input', function() {
+            updateCharCount('title', 'titleCount', 200);
+        });
+
+        document.getElementById('description').addEventListener('input', function() {
+            updateCharCount('description', 'descCount', 1000);
+        });
+
+        // Auto fetch assignments when page loads
+        window.onload = getAssignmentByTeacherId;
+    </script>
+</body>
+</html>
