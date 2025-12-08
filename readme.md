@@ -38,53 +38,49 @@
 
 
 
-## Introduction
+# Introduction
 
 A Smart Chatbot for College Management System revolutionizes campus workflows and student-teacher interaction which leverages AI to provide instant support for campus queries (Q/A) , attendance, assignments, and so on.
 
 It is built using a robust Python, FastAPI, and top ML/AI libraries, stack—HTML, CSS, JS. It designed for scalability, adaptability and very easier to use.
 
 
-<p align="center">
-  <img src="image2" alt="College Website Screenshot" width="640">
-</p>
-
 ---
 
-## Features for Teachers
-- **Create account**
+# Features for Teachers
+- ### Create account
   <div style="display: flex; gap: 28px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/create_account.gif" alt="dashboard" width="340">
   </div>
 
-- **Student Chatbot & Dashboard**
+- ### Student Chatbot & Dashboard
   <div style="display: flex; gap: 18px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/dashboard.png" alt="dashboard" width="340">
     <img src="./frontend/assets/readme_assets/chatbot.png" alt="chatbot" width="340">
   </div>
 
-- **Attendance Management**
+- ### Attendance Management
   <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/attendance_create.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/attendance_update.gif" alt="Attendance Update" width="180">
     <img src="./frontend/assets/readme_assets/attendance_delete.gif" alt="Attendance Delete" width="180">
   </div>
 
-- **Assignment Management**
+- ### Assignment Management
   <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/assignment_create.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/assignment_update.gif" alt="Attendance Update" width="180">
     <img src="./frontend/assets/readme_assets/assignment_delete.gif" alt="Attendance Delete" width="180">
   </div>
 
-- **Marks Management**
+- ### Marks Management
   <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/create_mark.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/update_mark.gif" alt="Attendance Update" width="180">
     <img src="./frontend/assets/readme_assets/delete_mark.gif" alt="Attendance Delete" width="180">
   </div>
 
-- **Notice Management**
+- ### Notice Management
   <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/create_notice.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/update_notice.gif" alt="Attendance Update" width="180">
@@ -92,37 +88,49 @@ It is built using a robust Python, FastAPI, and top ML/AI libraries, stack—HTM
   </div>
 
 
-- **Fee Management**
+- ### Fee Management
 <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/create_fee.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/update_fee.gif" alt="Attendance Update" width="180">
     <img src="./frontend/assets/readme_assets/delete_fee.gif" alt="Attendance Delete" width="180">
 </div>
 
-- **Course**
+- ### Course
   <div style="display: flex; gap: 12px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/create_course.gif" alt="Attendance Create" width="180">
     <img src="./frontend/assets/readme_assets/update_course.gif" alt="Attendance Update" width="180">
     <img src="./frontend/assets/readme_assets/delete_course.gif" alt="Attendance Update" width="180">
 </div>
 
-- **Dashboard Overview**
+- ### Dashboard Overview
   <div style="display: flex; gap: 28px; justify-content: center;">
     <img src="./frontend/assets/readme_assets/teacher_dashboard.png" alt="dashboard" width="340">
   </div>
 ---
 
-## How Chatbot Works
+## Chatbot Architecture and Workflow
 
-A streamlined multi-stage system:
-- Natural language processing converts user queries into actions.
-- Integrates student management, attendance, assignment, marks, notices, fees, and course enrollment.
-- Automatically updates dashboard information and notifies users.
-- Ensures data security, privacy, and fast response times.
+The chatbot processes user queries through a multi-stage pipeline that categorizes, retrieves, and formats information before delivering responses.
+
+**Query Classification**
+When users submit queries regarding college information, attendance records, academic marks, fee details, enrolled courses, or record updates, the system classifies each query into one of the following categories: General Information, College Information, Attendance, Marks, Fees, or Courses Enrolled.
+
+**Data Retrieval**
+The system employs a conditional data retrieval strategy:
+- For user-specific queries (attendance, marks, fees, enrolled courses), the system fetches data directly from the SQL database.
+- For irrelevant or out-of-scope queries, the system performs a web search via DuckDuckGo and returns the search results.
+- For general college-related queries, the system retrieves information from a Pinecone vector database. This database was populated using the Crawl4AI API to crawl and index the college website content.
+
+**Response Generation**
+Before delivering the final response, the system formats the retrieved documents and passes them to a Large Language Model (LLM) for optimization and natural language generation.
+
+**Response Delivery**
+The processed response is then returned to the user.
 
 <p align="center">
   <img src="./frontend/assets/readme_assets/structure.png" alt="System Architecture" width="640">
 </p>
+Fig: Architecture of chatbot
 
 ---
 
@@ -133,23 +141,55 @@ The backend leverages robust, normalized models enabling efficient data manageme
 <p align="center">
   <img src="./frontend/assets/readme_assets/models_diagram.png" alt="Database Models" width="640">
 </p>
-
+Fig: Database models of SQLModel 
 ---
 
 ## Installation
 
 ### With Docker
 
+
+### Manual Installation
+
+First fork this repository 
+
 ```bash
 # Clone the repo
 git clone https://github.com/shivachaudhary46/college_chatbot.git
+
 cd college_chatbot
 
-# Build and run using Docker Compose
-docker-compose up --build
+## NOTE: Python==3.11 or Python==3.10 is Compatible versions
+
+# create new virtual environment 
+python3 -m venv venv
+
+# install all neccessary packages 
+pip3 install -r requirements.txt 
+
+# check list of packages 
+pip3 list 
 ```
 
-### Manual Installation
+One last step is remaining to complete before we run our app, 
+
+<p align="center">
+  <img src="./frontend/assets/readme_assets/error_loading_classifier.png" alt="Database Models" width="640">
+</p>
+
+If you see Error Loading model, don't worry, 
+
+<p align="center">
+  <img src="./frontend/assets/readme_assets/college_queries.png" alt="Database Models" width="640">
+</p>
+
+You can see Classification.ipynb right. First, you have to trained model. Run each cell in classification model, the trained_model will come in backend/data. Run classificiation.ipynb all cells 
+
+<p align="center">
+  <img src="./frontend/assets/readme_assets/trained_model.png" alt="Database Models" width="640">
+</p>
+Fig: Trained_model shown 
+
 
 **Frontend:**
 ```bash
