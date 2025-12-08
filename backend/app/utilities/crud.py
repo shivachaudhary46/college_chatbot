@@ -34,14 +34,43 @@ def get_all_users(session: Session, role: str, skip: int = 0, limit: int = 100) 
     users = session.exec(statement).all()
     return users
 
-def delete_user_by_id(session: Session, id: int) -> bool:
-    """Delete user by ID"""
-    user = session.get(User, id)
-    if user:
-        session.delete(user)
-        session.commit()
-        return True
-    return False
+def delete_user_by_id(session: Session, user_id: int):
+
+    links = session.exec(
+        select(UserCourseLink).where(UserCourseLink.user_id == user_id)
+    ).all()
+
+    attendances = session.exec(
+        select(Attendance).where(Attendance.user_id == user_id)
+    )
+
+    fees = session.exec(
+        select(Fees).where(Fees.user_id == user_id)
+    )
+
+    marks = session.exec(
+        select(Marks).where(Marks.user_id == user_id)
+    )
+
+    for link in links:
+        session.delete(link)
+
+    for attendance in attendances:
+        session.delete(attendance)
+
+    for fee in fees:
+        session.delete(fee)
+
+    for mark in marks:
+        session.delete(mark)
+
+    user = session.get(User, user_id)
+    if not user:
+        return False
+
+    session.delete(user)
+    session.commit()
+    return True
 
 # ===== Attendance Operations =====
 # =================================

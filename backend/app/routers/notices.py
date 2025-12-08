@@ -94,9 +94,9 @@ def update_notice_endpoint(
 def delete_notice_endpoint(
     notice_id: int,
     session: SessionDep,
-    user: User = Depends(role_required(["admin"]))
+    user: User = Depends(role_required(["teacher", "admin"]))
 ):
-    """Delete a notice (admin only)"""
+    """Delete a notice (admin, teacher) only"""
     try:
         if not delete_notice(session, notice_id):
             logger.warning(f"Notice {notice_id} not found for deletion")
