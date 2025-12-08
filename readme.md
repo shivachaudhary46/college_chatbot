@@ -190,6 +190,22 @@ You can see Classification.ipynb right. First, you have to trained model. Run ea
 </p>
 Fig: Trained_model shown 
 
+to run the app
+
+first go to the
+```bash
+
+cd backend 
+
+python app/main.py 
+
+# another way
+
+cd backend
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude backend/logs/*
+
+```
 
 **Frontend:**
 ```bash
