@@ -1,12 +1,15 @@
 FROM python:3.11
-WORKDIR /backend/app
+WORKDIR /app
 
 # Install the application dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy in the source code 
-COPY src ./source
+# Copy backend code
+COPY backend/app ./app
+COPY backend/data ./data
+
+# Expose backend to 8000 ports
 EXPOSE 8000
 
 # Setup an app user so the 
