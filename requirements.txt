@@ -37,15 +37,15 @@ pinecone
 pinecone-client
 
 # --- Data / Science ---
-numpy
+numpy>=1.26.4,<2.0.0
 pandas
 scikit-learn
 scipy
 
 # --- NLP / ML ---
 sentence-transformers
-transformers
-torch
+torch>=2.1.0,<2.2.0
+transformers>=4.38.2,<5.0.0
 tiktoken
 tokenizers
 regex
