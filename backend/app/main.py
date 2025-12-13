@@ -1,20 +1,13 @@
-import sys
-from pathlib import Path
-
-# Add the backend directory to Python path
-backend_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(backend_dir))
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
 
-from logger.logger import logger
-from db.database import create_all_db_tables
-from routers import (
+from app.logger.logger import logger
+from app.db.database import create_all_db_tables
+from app.routers import (
     users, auth, attendance, fees, marks, courses, assignments, notices, chat
 )
-from data.classify_query import get_classifier
+from app.classify.classify_query import get_classifier
 
 ml_models = {}
 

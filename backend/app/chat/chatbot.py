@@ -11,7 +11,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
  
-from data.classify_query import get_classifier
+from app.data.classify_query import get_classifier
 from langchain_core.runnables import RunnablePassthrough 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq

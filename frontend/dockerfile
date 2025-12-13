@@ -1,0 +1,12 @@
+FROM nginx:alpine
+
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copying frontend files to nginx's html dir (container)
+COPY . /usr/share/nginx/html
+
+# Expose port 80 (only)
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

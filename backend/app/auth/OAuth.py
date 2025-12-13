@@ -1,8 +1,3 @@
-from db.database import SessionDep
-from models.models import User
-from models.schemas import TokenData
-from typing import Annotated
-
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, status, HTTPException
 from sqlmodel import select
@@ -13,7 +8,12 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 
-from logger.logger import logger
+from app.db.database import SessionDep
+from app.models.models import User
+from app.models.schemas import TokenData
+from typing import Annotated
+from app.logger.logger import logger
+
 '''
 get important environment variables from .env file, using load_dotenv()
 '''

@@ -28,7 +28,7 @@ class QueryClassifier:
             self.load_model()
             QueryClassifier._initialized = True
     
-    def load_model(self, model_path: str = "data/trained_model"):
+    def load_model(self, model_path: str = "backend.data/trained_model"):
         """Load model, tokenizer, and configurations"""
         try:
             print("🔄 Loading model...")
