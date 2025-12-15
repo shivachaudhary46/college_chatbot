@@ -1,9 +1,9 @@
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 
-from models.schemas import ChatQuery, ChatResponse, QueryType
-from models.models import User
-from utilities.crud import (
+from app.models.schemas import ChatQuery, ChatResponse, QueryType
+from app.models.models import User
+from app.utilities.crud import (
     get_attendance_by_user_id,
     get_marks_by_user_id,
     get_fees_by_user_id,
@@ -12,7 +12,7 @@ from utilities.crud import (
     get_user_by_user_id,
     get_recent_notices,
 )
-from chat.chatbot import (
+from app.chat.chatbot import (
     classify_query,
     format_attendance_data,
     format_fees_data,
@@ -25,9 +25,9 @@ from chat.chatbot import (
     format_user_data,
     format_notice_data,
 )
-from auth.OAuth import role_required
-from db.database import SessionDep
-from logger.logger import logger
+from app.auth.OAuth import role_required
+from app.db.database import SessionDep
+from app.logger.logger import logger
 
 router = APIRouter(
     prefix="/api/v1/chat",

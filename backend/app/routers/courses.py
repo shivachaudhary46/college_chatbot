@@ -2,9 +2,9 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from models.schemas import CourseCreate, CourseResponse
-from models.models import User
-from utilities.crud import (
+from app.models.schemas import CourseCreate, CourseResponse
+from app.models.models import User
+from app.utilities.crud import (
     get_all_courses,
     get_course_by_id,
     update_course,
@@ -16,9 +16,9 @@ from utilities.crud import (
     get_students_from_course,
     get_courses_for_teacher
 )
-from auth.OAuth import role_required
-from db.database import SessionDep
-from logger.logger import logger
+from app.auth.OAuth import role_required
+from app.db.database import SessionDep
+from app.logger.logger import logger
 
 router = APIRouter(
     prefix="/api/v1",

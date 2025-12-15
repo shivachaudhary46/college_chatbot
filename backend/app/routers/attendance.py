@@ -1,18 +1,18 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from models.schemas import AttendanceCreate, AttendanceResponse
-from db.database import SessionDep
-from models.models import User, Attendance
-from utilities.crud import (
+from app.models.schemas import AttendanceCreate, AttendanceResponse
+from app.db.database import SessionDep
+from app.models.models import User, Attendance
+from app.utilities.crud import (
     get_user_by_username,
     create_attendance, 
     get_attendance_by_user_id,
     update_attendance, 
     delete_attendance_by_id
 )
-from auth.OAuth import role_required
-from logger.logger import logger
+from app.auth.OAuth import role_required
+from app.logger.logger import logger
 
 router = APIRouter(
     prefix="/api/v1/attendance",

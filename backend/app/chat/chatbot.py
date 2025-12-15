@@ -11,19 +11,19 @@ from langchain_core.prompts import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
  
-from app.data.classify_query import get_classifier
+from app.classify.classify_query import get_classifier
 from langchain_core.runnables import RunnablePassthrough 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
 
-from models.schemas import QueryType
+from app.models.schemas import QueryType
 load_dotenv(find_dotenv(), override=True)
 
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from typing import Dict
 
-from logger.logger import logger
+from app.logger.logger import logger
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))

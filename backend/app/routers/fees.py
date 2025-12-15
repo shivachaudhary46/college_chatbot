@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
-from db.database import SessionDep
-from models.schemas import FeesCreate, FeesResponse
-from models.models import Fees, User
-from auth.OAuth import role_required
-from logger.logger import logger 
-from utilities.crud import (
+from app.db.database import SessionDep
+from app.models.schemas import FeesCreate, FeesResponse
+from app.models.models import Fees, User
+from app.auth.OAuth import role_required
+from app.logger.logger import logger 
+from app.utilities.crud import (
     get_user_by_username,
     create_fees,
     get_fees_by_user_id,

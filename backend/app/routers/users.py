@@ -6,16 +6,16 @@ router = APIRouter(
     tags=["users"]
 )
 
-from models.models import User
-from db.database import SessionDep
-from models.schemas import UserCreate, UserResponse
-from utilities.crud import (
+from app.models.models import User
+from app.db.database import SessionDep
+from app.models.schemas import UserCreate, UserResponse
+from app.utilities.crud import (
     get_user_by_username, create_user, get_all_users, delete_user_by_id  
 )
-from utilities.utilities import hasher 
-from logger.logger import logger
-from auth.OAuth import get_current_user, authenticate_user
-from utilities.utilities import hasher 
+from app.utilities.utilities import hasher 
+from app.logger.logger import logger
+from app.auth.OAuth import get_current_user, authenticate_user
+from app.utilities.utilities import hasher 
 
 # Create User
 @router.post("/", response_model=UserResponse)

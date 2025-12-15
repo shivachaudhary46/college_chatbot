@@ -4,6 +4,7 @@ import json
 from functools import lru_cache
 from typing import Dict, Optional
 import time
+import os 
 
 class QueryClassifier:
     """
@@ -28,56 +29,41 @@ class QueryClassifier:
             self.load_model()
             QueryClassifier._initialized = True
     
-    def load_model(self, model_path: str = "backend.data/trained_model"):
+    def load_model(self, model_path: str | None = None):
         """Load model, tokenizer, and configurations"""
         try:
-            print("🔄 Loading model...")
             start_time = time.time()
-            
-            # Convert to absolute path and fix Windows path issue
-            import os
-            model_path = os.path.abspath(model_path)
-            # Convert backslashes to forward slashes for HuggingFace compatibility
-            model_path = model_path.replace('\\', '/')
-            print(f"📁 Model path: {model_path}")
-            
-            # Verify path exists
-            if not os.path.exists(model_path.replace('/', '\\')):
-                raise FileNotFoundError(f"Model directory not found: {model_path}")
-            
+
+            model_dir = model_path or os.getenv("MODEL_DIR")
+            if not model_dir:
+                raise RuntimeError("MODEL_DIR not set")
+
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                model_path,
-                local_files_only=True,
-                trust_remote_code=True
-            )
-            
+            self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+
             # Load model
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                model_path,
-                local_files_only=True,
-                trust_remote_code=True
-            )
-            self.model.eval()  # Set to evaluation mode
-            
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+            self.model.eval()
+
             # Load label mappings
-            with open(f"{model_path}/config.json", "r") as f:
+            with open(os.path.join(model_dir, "config.json"), "r") as f:
                 config = json.load(f)
-                self.id2label = {int(k): v for k, v in config.get("id2label", {}).items()}
-            
-            # Set device (GPU if available)
+                self.id2label = {
+                    int(k): v for k, v in config.get("id2label", {}).items()
+                }
+
+            # Device setup
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.model.to(self.device)
-            
-            # Optional: Use half precision for faster inference (if GPU available)
+
             if torch.cuda.is_available():
-                self.model.half()  # Convert to FP16 for faster inference
-            
+                self.model.half()
+
             load_time = time.time() - start_time
             print(f"✅ Model loaded in {load_time:.2f}s")
             print(f"✅ Device: {self.device}")
             print(f"✅ Labels: {list(self.id2label.values())}")
-            
+
         except Exception as e:
             print(f"❌ Error loading model: {e}")
             raise

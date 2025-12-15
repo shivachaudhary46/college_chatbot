@@ -1,18 +1,18 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from models.schemas import NoticeCreate, NoticeResponse
-from models.models import User, Notice
-from utilities.crud import (
+from app.models.schemas import NoticeCreate, NoticeResponse
+from app.models.models import User, Notice
+from app.utilities.crud import (
     create_notice_records,
     get_all_notices,
     get_notice_by_id,
     update_notice,
     delete_notice,
 )
-from auth.OAuth import role_required
-from db.database import SessionDep
-from logger.logger import logger
+from app.auth.OAuth import role_required
+from app.db.database import SessionDep
+from app.logger.logger import logger
 
 router = APIRouter(
     prefix="/api/v1/notices",

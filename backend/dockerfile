@@ -1,18 +1,30 @@
 # Don't change this 
 # Contributors - If you touch this I'll break your legs
 
-FROM python:3.11-slim-bookworm 
+# Stage 1: Build dependencies 
+FROM python:3.11-slim-bookworm AS build-stage
 
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN useradd -m userapp
-
-# Copy ONLY requirements for caching 
+# Copy only requirements for caching 
 COPY requirements.txt ./
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+# stage 2: Runtime 
+FROM python:3.11-slim-bookworm 
+
+ENV PYTHONUNBUFFERED=1 
+
+WORKDIR /app
+
+# Create non-root user 
+RUN useradd -m userapp
+
+# Copy installed dependecies from build stage
+COPY --from=build-stage /usr/local /usr/local
 
 # Copy backend code
 COPY --chown=userapp:userapp app ./app
@@ -25,4 +37,4 @@ USER userapp
 # Expose backend to 8000 ports
 EXPOSE 8000
 
-CMD ["python", "./app/main.py"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

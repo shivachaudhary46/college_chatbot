@@ -4,8 +4,8 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import HTTPException 
 
-from models.schemas import NoticeCreate, FeesCreate, MarksCreate, CourseCreate, AssignmentCreate, AttendanceCreate, UserResponse
-from models.models import User, Attendance, Fees, Marks, Assignment, Course, Notice, UserCourseLink
+from app.models.schemas import NoticeCreate, FeesCreate, MarksCreate, CourseCreate, AssignmentCreate, AttendanceCreate, UserResponse
+from app.models.models import User, Attendance, Fees, Marks, Assignment, Course, Notice, UserCourseLink
 
 # ====== User Operations =======
 # ==============================

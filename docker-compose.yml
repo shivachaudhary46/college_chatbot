@@ -3,7 +3,7 @@ version: '3.9'
 
 services:
   backend: 
-    image: shivahchaudhary46/college_chatbot_backend:latest
+    image: shivahchaudhary46/college_chatbot1:latest
     container_name: backend
     build: 
       context: ./backend
@@ -13,8 +13,12 @@ services:
     ports: 
       - "8000:8000"
     working_dir: /app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
-      - backend_data:/app/data
+      - ./backend/data/trained_model:/models/trained_model:ro
+      - ./backend/data/database.db:/app/data/database.db
+    environment:
+      - MODEL_DIR=/models/trained_model
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

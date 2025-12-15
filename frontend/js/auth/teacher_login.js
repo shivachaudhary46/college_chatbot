@@ -3,7 +3,7 @@ import ApiService from '../services/api.js';
 
 history.pushState(null, "", location.href);
     window.onpopstate = function () {  
-    window.location.href = "./index.html"; 
+    window.location.href = "/"; 
 };
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Teacher login page loaded');

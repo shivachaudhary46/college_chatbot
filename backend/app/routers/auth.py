@@ -7,14 +7,14 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
-from models.schemas import Token, UserResponse
-from models.models import User
-from auth.OAuth import authenticate_user, create_access_token, get_current_user
-from db.database import SessionDep
+from app.models.schemas import Token, UserResponse
+from app.models.models import User
+from app.auth.OAuth import authenticate_user, create_access_token, get_current_user
+from app.db.database import SessionDep
 
 
 # Logger Setup
-from logger.logger import logger
+from app.logger.logger import logger
 
 load_dotenv()
 ACCESS_TOKEN_EXPIRE = int(os.getenv("ACCESS_TOKEN_EXPIRE", 60))

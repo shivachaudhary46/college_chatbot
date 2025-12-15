@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from models.schemas import AssignmentCreate, AssignmentResponse
-from models.models import User, Assignment, Course
-from utilities.crud import (
+from app.models.schemas import AssignmentCreate, AssignmentResponse
+from app.models.models import User, Assignment, Course
+from app.utilities.crud import (
     create_assignment_records,
     delete_assignment_by_id,
     get_assignment_by_course_id,
@@ -12,9 +12,9 @@ from utilities.crud import (
     get_recent_assignment_per_course,
     get_assignment_by_teacher_id,
 )
-from auth.OAuth import role_required
-from db.database import SessionDep
-from logger.logger import logger
+from app.auth.OAuth import role_required
+from app.db.database import SessionDep
+from app.logger.logger import logger
 
 router = APIRouter(
     prefix="/api/v1",
