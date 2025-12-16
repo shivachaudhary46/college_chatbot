@@ -44,7 +44,9 @@ async def login(
                 detail="Invalid username or password"
             )
 
+        # logger.info(f"Found user with {user.username}")
         access_time = timedelta(minutes=ACCESS_TOKEN_EXPIRE)
+        # logger.info(f"given time = {access_time}")
         token = create_access_token(
             data={"sub": user.username},
             expire_time=access_time

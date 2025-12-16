@@ -7,12 +7,14 @@ import os
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
+from typing import Union
 
 from app.db.database import SessionDep
 from app.models.models import User
 from app.models.schemas import TokenData
 from typing import Annotated
 from app.logger.logger import logger
+from app.config import settings
 
 '''
 get important environment variables from .env file, using load_dotenv()
@@ -54,12 +56,17 @@ def authenticate_user(session: SessionDep, username: str, password: str) :
     from pwdlib import PasswordHash
     hasher = PasswordHash.recommended()
 
+    logger.info(f"type of plain_password: {type(password)}, hashed_password: {type(user.hashed_password)}")
+
     if not user:
         logger.info("Username not found in database")
-        return False
+        return None
+    if not isinstance(password, str):
+        logger.error(f"Password is not a string for username {username} ")
+        return none
     if not hasher.verify(password, user.hashed_password):
         logger.info(f"Password not matched of username {username}")
-        return False
+        return None 
     return user
 
 '''
@@ -71,15 +78,32 @@ data = {
 }
 Create access token 
 '''
-def create_access_token(data: dict, expire_time: timedelta | None):
-    form_data = data.copy()
+
+def create_access_token(data: dict, expire_time: Union[timedelta, None] = None):
+    to_encode = data.copy()
+    
     if expire_time:
-        access_time = datetime.now(timezone.utc) + expire_time
+        expire = datetime.now(timezone.utc) + expire_time
     else:
-        access_time = datetime.now(timezone.utc) + timedelta(minutes=15)
-    form_data.update({"exp": access_time})
-    token = jwt.encode(form_data, secret_key, algorithm=ALGO)
-    return token 
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    
+    to_encode.update({"exp": expire})
+    
+    # Add validation
+    if not settings.SECRET_KEY:
+        raise ValueError("SECRET_KEY is not configured")
+    
+    # logger.error(f"JWT PAYLOAD → sub='{to_encode.get('sub')}' ({type(to_encode.get('sub'))})")
+    # logger.error(f"JWT PAYLOAD → exp={to_encode.get('exp')} ({type(to_encode.get('exp'))})")
+    # logger.error(f"JWT SECRET → {settings.SECRET_KEY!r} ({type(settings.SECRET_KEY)})")
+    # logger.error(f"JWT ALGO → {settings.ALGO!r} ({type(settings.ALGO)})")
+    
+    encoded_jwt = jwt.encode(
+        to_encode, 
+        str(settings.SECRET_KEY),  # Ensure it's a string
+        algorithm=settings.ALGO
+    )
+    return encoded_jwt
 
 '''
 We can look if the user has token expirity remaining or not, we can do by using, 
@@ -93,7 +117,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth_scheme2)], sessio
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGO])
+        # Use SECRET_KEY (uppercase) - same as in create_access_token
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGO])
         username = payload.get("sub")
         if username is None:
             raise credentials_exception

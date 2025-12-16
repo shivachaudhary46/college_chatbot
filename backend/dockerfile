@@ -38,3 +38,32 @@ USER userapp
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Don't change this 
+# Contributors - If you touch this I'll break your legs
+
+# FROM python:3.11-slim-bookworm 
+
+# ENV PYTHONUNBUFFERED=1
+
+# WORKDIR /app
+
+# RUN useradd -m userapp
+
+# # Copy ONLY requirements for caching 
+# COPY requirements.txt ./
+
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # Copy backend code
+# COPY --chown=userapp:userapp app ./app
+
+# # Setup an app user so the 
+# RUN mkdir -p /app/logs && chown -R userapp:userapp /app
+
+# USER userapp
+
+# # Expose backend to 8000 ports
+# EXPOSE 8000
+
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
