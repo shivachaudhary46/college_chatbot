@@ -1,0 +1,50 @@
+# Version Control
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# Environment file
+.env
+
+.vscode/
+
+# Documentation
+README.md
+docs/
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Tests
+tests/
+test/
+*.test.js
+
+# Build artifacts
+dist/
+build/
+*.pyc
