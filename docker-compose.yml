@@ -3,7 +3,7 @@ version: '3.9'
 
 services:
   backend: 
-    image: shivahchaudhary46/college_chatbot1:latest
+    image: shivahchaudhary46/college_chatbot_backend:latest
     container_name: backend
     build: 
       context: ./backend
